@@ -98,12 +98,12 @@ public class MailSyncService {
             logger.info("[{}] Folder '{}' opened. Total messages: {}", account.getUsername(), folderName, messageCount);
 
             // Setup Processed Folder
-            String processedFolderName = "Processed-" + java.time.LocalDate.now();
-            Folder processedFolder = store.getFolder(processedFolderName);
-            if (!processedFolder.exists()) {
-                processedFolder.create(Folder.HOLDS_MESSAGES);
-                logger.info("[{}] Created new archive folder: {}", account.getUsername(), processedFolderName);
-            }
+//            String processedFolderName = "Processed-" + java.time.LocalDate.now();
+//            Folder processedFolder = store.getFolder(processedFolderName);
+//            if (!processedFolder.exists()) {
+//                processedFolder.create(Folder.HOLDS_MESSAGES);
+//                logger.info("[{}] Created new archive folder: {}", account.getUsername(), processedFolderName);
+//            }
 
             Message[] messages = folder.getMessages();
             for (Message message : messages) {
@@ -113,16 +113,17 @@ public class MailSyncService {
                 String messageId = mimeMessage.getMessageID();
                 String subject = mimeMessage.getSubject();
 
-                // LOG: Duplicate tracking
                 if (messageId != null && emailRepository.existsByMessageId(messageId)) {
                     logger.debug("[{}] Skipping duplicate email. ID: {} | Subject: {}", account.getUsername(), messageId, subject);
-                    moveAndFlag(folder, message, processedFolder);
+//                    moveAndFlag(folder, message, processedFolder);
+                    message.setFlag(Flags.Flag.DELETED, true);
                     continue;
                 }
 
                 logger.info("[{}] Processing new email. ID: {} | Subject: {}", account.getUsername(), messageId, subject);
                 processAndSaveMessage(mimeMessage, account.getUsername());
-                moveAndFlag(folder, message, processedFolder);
+//                moveAndFlag(folder, message, processedFolder);
+                message.setFlag(Flags.Flag.DELETED, true);
                 logger.info("[{}] Successfully archived email: {}", account.getUsername(), subject);
             }
         } catch (Exception e) {
