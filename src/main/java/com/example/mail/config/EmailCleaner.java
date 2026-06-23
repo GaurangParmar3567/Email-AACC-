@@ -1,4 +1,4 @@
-package com.example.mail;
+package com.example.mail.config;
 
 public class EmailCleaner {
 

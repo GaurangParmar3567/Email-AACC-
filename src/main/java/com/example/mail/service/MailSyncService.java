@@ -1,11 +1,17 @@
-package com.example.mail;
+package com.example.mail.service;
 
+import com.example.mail.config.EmailCleaner;
+import com.example.mail.config.MailProperties;
+import com.example.mail.model.Attachment;
+import com.example.mail.model.ContactAction;
+import com.example.mail.model.Email;
+import com.example.mail.repository.ContactActionRepository;
+import com.example.mail.repository.EmailRepository;
+import lombok.var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 
 import javax.mail.*;
@@ -19,10 +25,11 @@ import java.util.stream.Collectors;
 @Service
 public class MailSyncService {
 
-    private final Logger logger = LoggerFactory.getLogger("MAIL_SYNC_SERVICE_SBI");
+    private final Logger logger = LoggerFactory.getLogger("MAIL_SYNC_LOGGER");
 
     private final EmailRepository emailRepository;
     private final MailProperties mailProperties;
+    private final ContactActionRepository contactActionRepository;
 
 //    @Value("${mail.imap.host}")
 //    private String host;
@@ -39,9 +46,10 @@ public class MailSyncService {
 //    @Value("${mail.store.protocol}")
 //    private String protocol;
 
-    public MailSyncService(EmailRepository emailRepository, MailProperties mailProperties) {
+    public MailSyncService(EmailRepository emailRepository, MailProperties mailProperties, ContactActionRepository contactActionRepository) {
         this.emailRepository = emailRepository;
         this.mailProperties = mailProperties;
+        this.contactActionRepository = contactActionRepository;
         logger.info("MailSyncService initialized with EmailRepository.");
     }
 
@@ -71,8 +79,8 @@ public class MailSyncService {
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
             // 1. Define folders to scan.
             // Note: Gmail uses "[Gmail]/Sent Mail", most others use "Sent".
-            String[] folderNames = {"INBOX", "Sent", "[Gmail]/Sent Mail"};
-
+//            String[] folderNames = {"INBOX", "Sent", "[Gmail]/Sent Mail"};
+            String[] folderNames = {"INBOX"};
             for (String folderName : folderNames) {
                 syncFolder(store, folderName, account);
             }
@@ -143,11 +151,67 @@ public class MailSyncService {
         String messageId = message.getMessageID();
         email.setMessageId(messageId);
 
-        email.setSender(message.getFrom()[0].toString());
+        Long contactId = generateContactId();
+        email.setContactId(contactId);
+
+        String[] inReplyToHeaders = message.getHeader("In-Reply-To");
+        if (inReplyToHeaders != null && inReplyToHeaders.length > 0) {
+            email.setInReplyTo(inReplyToHeaders[0].trim());
+        }
+
+        String[] referencesHeaders = message.getHeader("References");
+        if (referencesHeaders != null && referencesHeaders.length > 0) {
+            email.setReferencesHeader(String.join(" ", referencesHeaders));
+        }
+
+        Email resolvedParent = null;
+
+        if (email.getInReplyTo() != null) {
+            resolvedParent = emailRepository.findByMessageId(email.getInReplyTo());
+        }
+
+        if (resolvedParent == null && referencesHeaders != null && referencesHeaders.length > 0) {
+            String[] refIds = referencesHeaders[0].split("\\s+");
+            for (int i = refIds.length - 1; i >= 0; i--) {
+                String refId = refIds[i].trim();
+                if (refId.isEmpty()) continue;
+
+                var ancestorOpt = emailRepository.findByMessageId(refId);
+                if (ancestorOpt!=null) {
+                    resolvedParent = ancestorOpt;
+                    break;
+                }
+            }
+        }
+
+        if (resolvedParent != null) {
+            email.setParentEmail(resolvedParent);
+            email.setContactId(resolvedParent.getContactId());
+            logger.info("[Thread Match] Linked email to parent Message-ID: {} under Contact ID: {}",
+                    resolvedParent.getMessageId(), resolvedParent.getContactId());
+        } else {
+            email.setContactId(generateContactId());
+            logger.info("[New Thread] No parent found. Generated new Contact ID: {}", email.getContactId());
+        }
+        if (email.getContactId() == null) {
+            email.setContactId(generateContactId());
+        }
+
+        email.setCustomerId(extractCustomerIdFromEmail(message));
+        InternetAddress from = (InternetAddress) message.getFrom()[0];
+        email.setSender(from.getAddress());
+        email.setMailFrom(from.getAddress());
+//        email.setSender(message.getFrom()[0].toString());
         email.setSubject(message.getSubject());
+        email.setOriginalSubject(message.getSubject());
         email.setReceivedDate(message.getReceivedDate());
 
+//        email.setMailFrom(message.getFrom()[0].toString());
+
         Address[] toAddresses = message.getRecipients(Message.RecipientType.TO);
+        if (toAddresses != null && toAddresses.length > 0) {
+            email.setMailTo(addressArrayToString(toAddresses));
+        }
         Address[] ccAddresses = message.getRecipients(Message.RecipientType.CC);
         Address[] bccAddresses = message.getRecipients(Message.RecipientType.BCC);
         if (bccAddresses != null) {
@@ -181,16 +245,40 @@ public class MailSyncService {
         email.setSkillId(determineSkillId(email));
         email.setAssigned(false);
         email.setResponded(false);
+        email.setSource("EMail");
+        email.setStatus("New");
+        email.setContactType("Email");
+        email.setPriority("Priority_3_Normal");
+        email.setTimezone(0);
+        Long currentTime = System.currentTimeMillis();
+        email.setArrivalTime(currentTime);
+
+        //dummy
+        email.setOpenTime(currentTime);
+        email.setOpenDuration(20);
+        email.setAgentId(3L);
+        email.setAgentFirstName("demsmaker");
+        email.setAgentLastName("demsmaker");
 
         email.setAttachments(new ArrayList<>());
         parseContent(message, email);
+        if (email.getBody() != null) {
+            email.setBody(EmailCleaner.cleanBody(email.getBody()));
+        }
+        if (email.getText() != null) {
+            email.setText(EmailCleaner.cleanBody(email.getText()));
+        }
+        if (email.getBodyHtml() != null) {
+            email.setBodyHtml(EmailCleaner.cleanBody(email.getBodyHtml())); // clean HTML helper if applicable
+        }
         String cleanedBody = EmailCleaner.cleanBody(email.getBody());
         email.setBody(cleanedBody);
+        determineSkillset(email);
         emailRepository.save(email);
         logger.info("[{}] Saved email ID: {}. Attachments count: {}", currentAccountUsername, email.getMessageId(), email.getAttachments().size());
+        createInitialContactAction(email, currentAccountUsername);
     }
 
-    // Helper methods for closing resources
     private void closeFolder(Folder folder) {
         try { if (folder != null && folder.isOpen()) folder.close(true); }
         catch (Exception e) { logger.error("Error closing folder", e); }
@@ -201,21 +289,25 @@ public class MailSyncService {
         catch (Exception e) { logger.error("Error closing store", e); }
     }
 
-    // Helper to determine skill ID based on subject/body
     private Long determineSkillId(Email email) {
-        // Implement your keyword matching or NLP logic here.
-        // Example: if (email.getSubject().contains("Loan")) return 101L;
-        return 1L; // Default skill ID
+        return 1L;
     }
 
-    // Helper to convert Address[] to comma-separated String
     private String addressArrayToString(Address[] addresses) {
+        if (addresses == null || addresses.length == 0) {
+            return "";
+        }
+
         return Arrays.stream(addresses)
-                .map(Address::toString)
+                .map(address -> {
+                    if (address instanceof InternetAddress) {
+                        return ((InternetAddress) address).getAddress();
+                    }
+                    return address.toString();
+                })
                 .collect(Collectors.joining(","));
     }
 
-    // Helper to check if an email exists in an Address array
     private boolean isAddressInArray(String email, Address[] addresses) {
         if (addresses == null) return false;
         for (Address address : addresses) {
@@ -241,20 +333,22 @@ public class MailSyncService {
         String contentType = part.getContentType();
         logger.debug("Parsing part with Content-Type: {}", contentType);
 
-        // 1. Handle Body Content
         if (part.isMimeType("text/plain") && email.getBody() == null) {
             email.setBody(part.getContent().toString());
+//            email.setText(part.getContent().toString());
             email.setHtml(false);
+            String currentText = email.getBody() != null ? email.getBody() : "";
+            email.setText(currentText + part.getContent().toString());
         } else if (part.isMimeType("text/html")) {
+            String currentHtml = email.getBodyHtml() != null ? email.getBodyHtml() : "";
+            email.setBodyHtml(currentHtml + part.getContent().toString());
             email.setBody(part.getContent().toString());
             email.setHtml(true);
         }
-        // 2. Handle Nested Messages (RFC822) - This is where forwarded attachments live!
         else if (part.isMimeType("message/rfc822")) {
             logger.info("Found nested RFC822 message. Diving in...");
             parseContent((Part) part.getContent(), email);
         }
-        // 3. Handle Multipart
         else if (part.isMimeType("multipart/*")) {
             Multipart multipart = (Multipart) part.getContent();
             int partCount = multipart.getCount();
@@ -264,9 +358,6 @@ public class MailSyncService {
                 BodyPart bodyPart = multipart.getBodyPart(i);
                 String fileName = bodyPart.getFileName();
                 String disposition = bodyPart.getDisposition();
-
-                // CRITICAL CHANGE: Check for fileName FIRST.
-                // Many attachments have no disposition but DO have a filename.
                 if (fileName != null || Part.ATTACHMENT.equalsIgnoreCase(disposition) || Part.INLINE.equalsIgnoreCase(disposition)) {
 
                     if (fileName != null) {
@@ -276,18 +367,63 @@ public class MailSyncService {
                         attachment.setMimeType(bodyPart.getContentType());
                         attachment.setFileData(StreamUtils.copyToByteArray(bodyPart.getInputStream()));
                         attachment.setEmail(email);
+                        attachment.setInternalPath(fileName);
+                        attachment.setDisplayName(fileName);
                         email.getAttachments().add(attachment);
                     } else {
-                        // It might be a nested part without a name, dive deeper
                         parseContent(bodyPart, email);
                     }
                 } else {
-                    // Not an attachment, keep digging
                     parseContent(bodyPart, email);
                 }
             }
         } else {
             logger.debug("Unhandled/Other MIME type: {}.", contentType);
         }
+    }
+    private Long generateContactId() {
+        return System.currentTimeMillis() % 10000000L + 1000000L;
+    }
+
+    private Long extractCustomerIdFromEmail(MimeMessage message) {
+        return (System.currentTimeMillis() / 1000) % 1000000L;
+    }
+
+    private void determineSkillset(Email email) {
+        String body = email.getBody() != null ? email.getBody().toLowerCase() : "";
+        String subject = email.getSubject() != null ? email.getSubject().toLowerCase() : "";
+
+        if (subject.contains("loan") || body.contains("loan")) {
+            email.setSkillsetId(101L);
+            email.setSkillsetName("Loan_Processing");
+        } else if (subject.contains("credit") || body.contains("credit")) {
+            email.setSkillsetId(102L);
+            email.setSkillsetName("Credit_Card");
+        } else {
+            email.setSkillsetId(16L);
+            email.setSkillsetName("EM_CHK_CHECKER");
+        }
+    }
+
+    private void createInitialContactAction(Email email, String currentAccountUsername) {
+        ContactAction action = new ContactAction();
+        action.setActionId(System.currentTimeMillis() % 10000000L + 1000000L);
+        action.setContact(email);
+        action.setContactId(email.getContactId());
+        action.setSubject(email.getSubject());
+        action.setTextContent(email.getText());
+        action.setTextHtml(email.getBodyHtml());
+        action.setCallbackStatus("Unspecified");
+        action.setSource("EMail_from_Customer");
+        action.setMailFrom(email.getMailFrom());
+        action.setMailTo(email.getMailTo());
+        action.setMailCc(email.getMailCc());
+        action.setActionType("Email");
+        action.setCreationTime(System.currentTimeMillis());
+        action.setTimeAllocated(20);
+//        action.setOutboundDispositionCode();
+//        action.setOutboundTalkTime();
+
+        contactActionRepository.save(action);
     }
 }

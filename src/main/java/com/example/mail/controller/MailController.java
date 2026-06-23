@@ -1,13 +1,17 @@
-package com.example.mail;
+package com.example.mail.controller;
 
+import com.example.mail.model.Attachment;
+import com.example.mail.dto.EmailResponseDTO;
+import com.example.mail.service.EmailDisplayService;
+import com.example.mail.service.MailSyncService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/email")
@@ -17,16 +21,18 @@ public class MailController {
     private final MailSyncService service;
     private final EmailDisplayService emailDisplayService;
 
+    private final Logger logger = LoggerFactory.getLogger("MAIL_SYNC_LOGGER");
+
     public MailController(MailSyncService service, EmailDisplayService emailDisplayService) {
         this.service = service;
         this.emailDisplayService = emailDisplayService;
     }
 
-    // Supports Pagination: /api/v1/email/inbox?page=0&size=20
     @GetMapping("/inbox")
     public ResponseEntity<Page<EmailResponseDTO>> getInbox(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
+        logger.info("Fetching unassigned emails");
         return ResponseEntity.ok(emailDisplayService.getUnassignedEmails(PageRequest.of(page, size)));
     }
 
@@ -38,35 +44,29 @@ public class MailController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EmailResponseDTO> getEmailById(@PathVariable Long id) {
+        logger.info("Fetching email by id: {}", id);
         EmailResponseDTO email = emailDisplayService.getEmailById(id);
         return ResponseEntity.ok(email);
     }
 
     @PutMapping("/{id}/assign/{agentId}")
     public ResponseEntity<Void> assignEmail(@PathVariable Long id, @PathVariable Long agentId) {
+        logger.info("Assigning email id: {} to agent id: {}", id, agentId);
         emailDisplayService.markAsAssigned(id, agentId);
         return ResponseEntity.ok().build();
     }
 
-    // Download Attachment API
     @GetMapping("/attachments/{attachmentId}")
     public ResponseEntity<byte[]> getAttachment(@PathVariable Long attachmentId) {
-        // Fetch the attachment entity from the database
+        logger.info("Fetching attachment by id: {}", attachmentId);
         Attachment attachment = emailDisplayService.getAttachmentById(attachmentId);
 
-        // Determine the content type (fallback to generic binary if unknown)
         String mimeType = attachment.getMimeType() != null ? attachment.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
+        logger.info("Attachment found: {}", attachment);
         return ResponseEntity.ok()
-                // Set the content type so the browser knows if it's a PDF, Image, etc.
                 .contentType(MediaType.parseMediaType(mimeType))
-
-                // Use "inline" to view in browser, or "attachment" to force a file download
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + attachment.getFileName() + "\"")
-
-                // Return the byte array stored in the database
                 .body(attachment.getFileData());
     }
-
-
 }

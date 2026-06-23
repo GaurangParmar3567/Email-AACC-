@@ -1,5 +1,6 @@
-package com.example.mail;
+package com.example.mail.repository;
 
+import com.example.mail.model.Email;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,14 +14,13 @@ import java.util.Optional;
 @Repository
 public interface EmailRepository extends JpaRepository<Email, Long> {
     boolean existsByMessageId(String messageId);
-    Optional<Email> findByMessageId(String messageId);
     boolean existsBySenderAndSubject(String sender, String subject);
     List<Email> findByAssignedFalseOrderByReceivedDateDesc();
-    List<Email> findByAssignedFalseAndSkillIdOrderByReceivedDateDesc(Long skillId);
-    // Updated repository call to respect your business logic
-    List<Email> findByAssignedFalseAndNotToBeDownloadedFalseOrderByReceivedDateDesc();
     Page<Email> findByAssignedFalseAndNotToBeDownloadedFalseOrderByReceivedDateDesc(Pageable pageable);
 
     @Query("SELECT e FROM Email e LEFT JOIN FETCH e.attachments WHERE e.id = :id")
     Optional<Email> findByIdWithAttachments(@Param("id") Long id);
+
+    List<Email> findByContactId(Long contactId);
+    Email findByMessageId(String messageId);
 }

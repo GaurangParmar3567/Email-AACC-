@@ -1,5 +1,11 @@
-package com.example.mail;
+package com.example.mail.service;
 
+import com.example.mail.model.Attachment;
+import com.example.mail.dto.AttachmentDTO;
+import com.example.mail.model.Email;
+import com.example.mail.dto.EmailResponseDTO;
+import com.example.mail.repository.AttachmentRepository;
+import com.example.mail.repository.EmailRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -78,6 +84,7 @@ public class EmailDisplayService {
 
         dto.setAttachments(attachmentDTOs);
         dto.setBody(email.getBody());
+        dto.setText(email.getText());
         return dto;
 //        String snippet = email.getBody();
 //        if (snippet != null) {
@@ -96,8 +103,4 @@ public class EmailDisplayService {
         return attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new RuntimeException("Attachment not found with ID: " + attachmentId));
     }
-
-//    public List<EmailResponseDTO> getAllEmails() {
-//        return emailRepository.findAll();
-//    }
 }

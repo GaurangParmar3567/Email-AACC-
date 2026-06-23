@@ -1,4 +1,4 @@
-package com.example.mail;
+package com.example.mail.dto;
 
 import lombok.*;
 
@@ -19,10 +19,11 @@ public class EmailResponseDTO {
     private String cc;
     private String bcc;
     private String body;
+    private String text;
+    private String bodyHtml;
     private boolean isHtml;
     private Date receivedDate;
-//    private List<AttachmentInfoDTO> attachments;
-    private List<AttachmentDTO> attachments = new ArrayList<>(); // Initialize here!
+    private List<AttachmentDTO> attachments = new ArrayList<>();
     private boolean isRepeat;
     private String status;
     private boolean inReplyTo;

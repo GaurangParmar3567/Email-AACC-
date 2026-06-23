@@ -1,4 +1,4 @@
-package com.example.mail;
+package com.example.mail.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

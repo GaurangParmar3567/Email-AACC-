@@ -1,4 +1,4 @@
-package com.example.mail;
+package com.example.mail.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

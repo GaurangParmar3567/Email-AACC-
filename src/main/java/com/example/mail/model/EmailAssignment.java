@@ -1,4 +1,4 @@
-package com.example.mail;
+package com.example.mail.model;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -15,7 +15,6 @@ public class EmailAssignment {
     @JoinColumn(name = "email_id", nullable = false)
     private Email email;
 
-    // Assuming you have an Agent or User ID in Service 2
     @Column(name = "agent_id", nullable = false)
     private Long agentId;
 
@@ -23,7 +22,6 @@ public class EmailAssignment {
     @Column(name = "assigned_at")
     private Date assignedAt;
 
-    // e.g., "ASSIGNED", "IN_PROGRESS", "TRANSFERRED", "RESOLVED"
     @Column(name = "status")
     private String status;
 
