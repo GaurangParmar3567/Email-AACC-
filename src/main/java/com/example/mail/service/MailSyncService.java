@@ -71,20 +71,27 @@ public class MailSyncService {
 
         try {
             Properties props = new Properties();
+
             props.put("mail.store.protocol", account.getProtocol());
-            props.put("mail.imap.port", String.valueOf(account.getPort()));
+            props.put("mail.imaps.host", account.getHost());
+            props.put("mail.imaps.port", String.valueOf(account.getPort()));
+
+            props.put("mail.imaps.auth", "true");
+            props.put("mail.imaps.ssl.enable", "true");
+            props.put("mail.imaps.ssl.trust", "*");
+            props.put("mail.imaps.connectiontimeout", "10000");
+            props.put("mail.imaps.timeout", "10000");
 
             Session session = Session.getInstance(props);
             store = session.getStore(account.getProtocol());
+            logger.info("Attempting standard authentication connection for user: {}", account.getUsername());
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
-            // 1. Define folders to scan.
-            // Note: Gmail uses "[Gmail]/Sent Mail", most others use "Sent".
-//            String[] folderNames = {"INBOX", "Sent", "[Gmail]/Sent Mail"};
+            logger.info("Successfully established connection to corporate mail store.");
+
             String[] folderNames = {"INBOX"};
             for (String folderName : folderNames) {
                 syncFolder(store, folderName, account);
             }
-
         } catch (Exception e) {
             logger.error("Error connecting to mail store for account: " + account.getUsername(), e);
         } finally {
