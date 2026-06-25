@@ -22,7 +22,7 @@ import java.io.StringWriter;
 import java.util.List;
 
 @RestController
-@RequestMapping(value = "/webservices",
+@RequestMapping(value = "/email-service/sbi",
         consumes = MediaType.APPLICATION_XML_VALUE,
         produces = MediaType.APPLICATION_XML_VALUE)
 public class ContactSoapController {
@@ -43,7 +43,7 @@ public class ContactSoapController {
         this.emailRepository = emailRepository;
     }
 
-    @PostMapping(value = "/CCMMAgentWebservices")
+    @PostMapping(value = "/getContactAACC")
     public ResponseEntity<String> readContact(@RequestBody String rawXmlRequestBody) {
         try {
             JAXBContext requestContext = JAXBContext.newInstance(SoapRequestEnvelope.class);
