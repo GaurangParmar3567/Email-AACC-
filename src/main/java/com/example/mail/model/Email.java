@@ -116,9 +116,6 @@ public class Email {
     @OneToMany(mappedBy = "email", cascade = CascadeType.ALL)
     private List<Attachment> attachments = new ArrayList<>();
 
-    @OneToMany(mappedBy = "email", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<EmailAssignment> assignments = new ArrayList<>();
-
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ContactAction> contactActions = new ArrayList<>();
 

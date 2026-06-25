@@ -39,12 +39,21 @@
 
     <!-- ========== CONTROLLER APPENDERS ========== -->
 
-    <!-- Script Search Controller -->
     <appender name="MAIL_SYNC" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log-path}/Email-mail-sync.log</file>
         <encoder><pattern>${file-pattern}</pattern></encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <fileNamePattern>${log-path}/Email-mail-sync.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max-file-size}</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="MAIL_SERVICES_AVAAYA" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log-path}/Email-mail-services-avaaya.log</file>
+        <encoder><pattern>${file-pattern}</pattern></encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log-path}/Email-mail-services-avaaya.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
             <maxFileSize>${max-file-size}</maxFileSize>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
@@ -67,6 +76,12 @@
 
     <logger name="MAIL_SYNC_LOGGER" level="DEBUG" additivity="false">
         <appender-ref ref="MAIL_SYNC" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+
+    <logger name="MAIL_SERVICES_AVAAYA_LOGGER" level="DEBUG" additivity="false">
+        <appender-ref ref="MAIL_SERVICES_AVAAYA" />
         <appender-ref ref="CONSOLE" />
     </logger>
 

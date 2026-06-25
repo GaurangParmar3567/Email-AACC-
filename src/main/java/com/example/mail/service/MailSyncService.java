@@ -73,14 +73,14 @@ public class MailSyncService {
             Properties props = new Properties();
 
             props.put("mail.store.protocol", account.getProtocol());
-            props.put("mail.imaps.host", account.getHost());
-            props.put("mail.imaps.port", String.valueOf(account.getPort()));
-
-            props.put("mail.imaps.auth", "true");
-            props.put("mail.imaps.ssl.enable", "true");
-            props.put("mail.imaps.ssl.trust", "*");
-            props.put("mail.imaps.connectiontimeout", "10000");
-            props.put("mail.imaps.timeout", "10000");
+            props.put("mail." + account.getProtocol() + ".host", account.getHost());
+            props.put("mail." + account.getProtocol() + ".port", String.valueOf(account.getPort()));
+            props.put("mail." + account.getProtocol() + ".auth", "true");
+            props.put("mail." + account.getProtocol() + ".ssl.enable", "true");
+            props.put("mail." + account.getProtocol() + ".ssl.trust", "*");
+            props.put("mail." + account.getProtocol() + ".connectiontimeout", "10000");
+            props.put("mail." + account.getProtocol() + ".timeout", "10000");
+            props.put("mail." + account.getProtocol() + ".auth.mechanisms", "LOGIN PLAIN");
 
             Session session = Session.getInstance(props);
             store = session.getStore(account.getProtocol());

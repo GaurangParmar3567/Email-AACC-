@@ -27,7 +27,7 @@ import java.util.List;
         produces = MediaType.APPLICATION_XML_VALUE)
 public class ContactSoapController {
 
-    private final Logger logger = LoggerFactory.getLogger(ContactSoapController.class);
+    private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
     private final EmailRepository emailRepository;
     private static final JAXBContext RESPONSE_CONTEXT;
 

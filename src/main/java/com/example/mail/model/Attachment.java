@@ -18,7 +18,8 @@ public class Attachment {
     private String mimeType;
 
     @Lob
-    @Column(columnDefinition="LONGBLOB")
+//    @Column(columnDefinition="LONGBLOB")
+    @Column(columnDefinition="VARBINARY(MAX)")
     private byte[] fileData;
 
     @ManyToOne(fetch = FetchType.LAZY)
