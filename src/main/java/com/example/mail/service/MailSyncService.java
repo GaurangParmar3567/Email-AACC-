@@ -78,12 +78,20 @@ public class MailSyncService {
             props.put("mail." + account.getProtocol() + ".auth", "true");
             props.put("mail." + account.getProtocol() + ".ssl.enable", "true");
             props.put("mail." + account.getProtocol() + ".ssl.trust", "*");
-            props.put("mail." + account.getProtocol() + ".connectiontimeout", "10000");
-            props.put("mail." + account.getProtocol() + ".timeout", "10000");
+            props.put("mail." + account.getProtocol() + ".connectiontimeout", "20000");
+            props.put("mail." + account.getProtocol() + ".timeout", "20000");
             props.put("mail." + account.getProtocol() + ".auth.mechanisms", "LOGIN PLAIN");
+
+            props.put("mail." + account.getProtocol() + ".socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail." + account.getProtocol() + ".socketFactory.fallback", "false");
+            props.put("mail." + account.getProtocol() + ".socketFactory.port", String.valueOf(account.getPort()));
+
+            props.put("mail.debug", "true");
+            props.put("mail.debug.auth", "true");
 
             Session session = Session.getInstance(props);
             store = session.getStore(account.getProtocol());
+            session.setDebug(true);
             logger.info("Attempting standard authentication connection for user: {}", account.getUsername());
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
             logger.info("Successfully established connection to corporate mail store.");
