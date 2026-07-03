@@ -379,7 +379,15 @@ public class MailSyncService {
                         logger.info("Found attachment: '{}'.", fileName);
                         Attachment attachment = new Attachment();
                         attachment.setFileName(fileName);
-                        attachment.setMimeType(bodyPart.getContentType());
+
+                        String rawContentType = bodyPart.getContentType();
+                        try {
+                            javax.mail.internet.ContentType ct = new javax.mail.internet.ContentType(rawContentType);
+                            attachment.setMimeType(ct.getBaseType());
+                        } catch (javax.mail.internet.ParseException e) {
+                            attachment.setMimeType(rawContentType);
+                        }
+
                         attachment.setFileData(StreamUtils.copyToByteArray(bodyPart.getInputStream()));
                         attachment.setEmail(email);
                         attachment.setInternalPath(fileName);
