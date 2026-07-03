@@ -1,5 +1,7 @@
 package com.example.mail.service;
 
+import com.example.mail.dto.response.EmailDetailDTO;
+import com.example.mail.dto.response.EmailThreadResponseDTO;
 import com.example.mail.model.Attachment;
 import com.example.mail.dto.AttachmentDTO;
 import com.example.mail.model.Email;
@@ -11,8 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Service
@@ -102,5 +104,119 @@ public class EmailDisplayService {
     public Attachment getAttachmentById(Long attachmentId) {
         return attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new RuntimeException("Attachment not found with ID: " + attachmentId));
+    }
+
+    @Transactional
+    public EmailThreadResponseDTO getEmailByIdAI(Long contactId) {
+        List<Email> emails = emailRepository.findByContactId(contactId);
+        if (emails == null || emails.isEmpty()) {
+            return null;
+        }
+
+        emails.sort(Comparator.comparing(Email::getId));
+
+        EmailThreadResponseDTO threadResponse = new EmailThreadResponseDTO();
+        threadResponse.setContactId(contactId);
+
+        threadResponse.setCustomerId(emails.get(0).getCustomerId());
+        threadResponse.setTotalMessagesInThread(emails.size());
+
+        AtomicInteger indexer = new AtomicInteger(1);
+        Map<String, EmailDetailDTO> trailMap = emails.stream()
+                .collect(Collectors.toMap(
+                        email -> String.valueOf(indexer.getAndIncrement()),
+                        this::mapToDetailDTO,
+                        (oldValue, newValue) -> oldValue,
+                        LinkedHashMap::new // Maintains incremental sort sequence insertion orders
+                ));
+
+        threadResponse.setThreadTrail(trailMap);
+        return threadResponse;
+    }
+
+    private EmailDetailDTO mapToDetailDTO(Email email) {
+        EmailDetailDTO dto = new EmailDetailDTO();
+
+        EmailDetailDTO.MessageMeta meta = new EmailDetailDTO.MessageMeta();
+        meta.setId(email.getId());
+        meta.setMessageId(email.getMessageId());
+        meta.setParentEmailId(email.getParentEmail() != null ? email.getParentEmail().getId() : null);
+        meta.setInReplyTo(email.getInReplyTo());
+        meta.setReferencesHeader(email.getReferencesHeader());
+        meta.setReceivedDate(email.getReceivedDate());
+        meta.setArrivalTime(email.getArrivalTime());
+        dto.setMessageMeta(meta);
+
+        EmailDetailDTO.RoutingAndSkill routing = new EmailDetailDTO.RoutingAndSkill();
+        routing.setSource(email.getSource());
+        routing.setStatus(email.getStatus());
+        routing.setPriority(email.getPriority());
+        routing.setSkillsetId(email.getSkillsetId());
+        routing.setSkillsetName(email.getSkillsetName());
+        routing.setSkillId(email.getSkillId());
+        routing.setTimezone(email.getTimezone());
+        routing.setNotToBeDownloaded(email.isNotToBeDownloaded());
+        routing.setRepeatFlag(email.isRepeatFlag());
+        routing.setAssigned(email.isAssigned());
+        routing.setResponded(email.isResponded());
+        dto.setRoutingAndSkill(routing);
+
+        EmailDetailDTO.AgentHandling agent = new EmailDetailDTO.AgentHandling();
+        agent.setAgentId(email.getAgentId());
+        agent.setAgentFirstName(email.getAgentFirstName());
+        agent.setAgentLastName(email.getAgentLastName());
+        agent.setOpenTime(email.getOpenTime());
+        agent.setOpenDuration(email.getOpenDuration());
+        dto.setAgentHandling(agent);
+
+        EmailDetailDTO.Participants participants = new EmailDetailDTO.Participants();
+        participants.setSender(email.getSender());
+        participants.setRecipient(email.getRecipient());
+        participants.setMailFrom(email.getMailFrom());
+        participants.setMailTo(email.getMailTo());
+        participants.setCc(email.getCc());
+        participants.setBcc(email.getBcc());
+        dto.setParticipants(participants);
+
+        EmailDetailDTO.Content content = new EmailDetailDTO.Content();
+        content.setSubject(email.getSubject());
+        content.setOriginalSubject(email.getOriginalSubject());
+        content.setHtml(email.isHtml());
+        content.setText(email.getText());
+        content.setBody(email.getBody());
+        content.setBodyHtml(email.getBodyHtml());
+        dto.setContent(content);
+
+        if (email.getAttachments() != null) {
+            List<EmailDetailDTO.AttachmentDTO> attachmentDTOs = email.getAttachments().stream()
+                    .map(this::mapToAttachmentDTO)
+                    .collect(Collectors.toList());
+            dto.setAttachments(attachmentDTOs);
+        } else {
+            dto.setAttachments(new ArrayList<>());
+        }
+
+        return dto;
+    }
+
+    private EmailDetailDTO.AttachmentDTO mapToAttachmentDTO(Attachment attachment) {
+        EmailDetailDTO.AttachmentDTO dto = new EmailDetailDTO.AttachmentDTO();
+        dto.setId(attachment.getId());
+        dto.setFileName(attachment.getFileName());
+        dto.setMimeType(attachment.getMimeType());
+
+        if (attachment.getFileData() != null && attachment.getFileData().length > 0) {
+            dto.setFileDataBase64(Base64.getEncoder().encodeToString(attachment.getFileData()));
+        } else {
+            dto.setFileDataBase64("");
+        }
+//        dto.setFileDataBase64("");
+
+        if (attachment.getFileData() != null) {
+            dto.setFileSizeSummary((attachment.getFileData().length / 1024) + " KB (Raw binary data excluded from payload)");
+        } else {
+            dto.setFileSizeSummary("0 KB");
+        }
+        return dto;
     }
 }

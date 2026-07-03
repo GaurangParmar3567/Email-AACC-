@@ -1,5 +1,7 @@
 package com.example.mail.controller;
 
+import com.example.mail.dto.request.EmailRequestAIDTO;
+import com.example.mail.dto.response.EmailThreadResponseDTO;
 import com.example.mail.model.Attachment;
 import com.example.mail.dto.EmailResponseDTO;
 import com.example.mail.service.EmailDisplayService;
@@ -68,5 +70,17 @@ public class MailController {
                 .contentType(MediaType.parseMediaType(mimeType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + attachment.getFileName() + "\"")
                 .body(attachment.getFileData());
+    }
+
+    @PostMapping("/get-email-details")
+    public ResponseEntity<EmailThreadResponseDTO> getEmailDetails(@RequestBody EmailRequestAIDTO emailRequestDTO) {
+        logger.info("Fetching complete interaction thread history tracking contactId: {}", emailRequestDTO.getContactId());
+
+        EmailThreadResponseDTO conversationThread = emailDisplayService.getEmailByIdAI(emailRequestDTO.getContactId());
+        if (conversationThread == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(conversationThread);
     }
 }
