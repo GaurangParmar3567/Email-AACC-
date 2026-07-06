@@ -75,6 +75,7 @@ public class EmailDetailDTO {
         private String fileName;
         private String mimeType;
         private String fileDataBase64;
+        private String extractedText;
         private String fileSizeSummary;
     }
 }

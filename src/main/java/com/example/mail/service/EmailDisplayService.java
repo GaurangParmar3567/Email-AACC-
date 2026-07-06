@@ -8,11 +8,15 @@ import com.example.mail.model.Email;
 import com.example.mail.dto.EmailResponseDTO;
 import com.example.mail.repository.AttachmentRepository;
 import com.example.mail.repository.EmailRepository;
+import org.apache.tika.Tika;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -22,6 +26,8 @@ public class EmailDisplayService {
 
     private final EmailRepository emailRepository;
     private final AttachmentRepository attachmentRepository;
+    private final Tika tika = new Tika();
+    private final Logger logger = LoggerFactory.getLogger("EMAIL_DISPLAY_SERVICE_LOGGER");
 
     public EmailDisplayService(EmailRepository emailRepository, AttachmentRepository attachmentRepository) {
         this.emailRepository = emailRepository;
@@ -69,6 +75,7 @@ public class EmailDisplayService {
         dto.setRecipient(email.getRecipient());
         boolean isReply = email.getInReplyTo() != null && !email.getInReplyTo().isEmpty();
         dto.setInReplyTo(isReply);
+        dto.setContactId(email.getContactId());
         List<Attachment> attachments = attachmentRepository.findByEmailId(email.getId())
                 .stream()
                 .filter(Optional::isPresent)
@@ -205,15 +212,31 @@ public class EmailDisplayService {
         dto.setFileName(attachment.getFileName());
         dto.setMimeType(attachment.getMimeType());
 
-        if (attachment.getFileData() != null && attachment.getFileData().length > 0) {
-            dto.setFileDataBase64(Base64.getEncoder().encodeToString(attachment.getFileData()));
+        if(attachment.getFileData() != null && attachment.getFileData().length>0){
+            dto.setFileSizeSummary((attachment.getFileData().length / 1024) + " KB (Raw binary data excluded from payload)");
+            String mimetype = attachment.getMimeType() != null ? attachment.getMimeType().toLowerCase() : "";
+            if(mimetype.contains("image/")){
+                dto.setFileDataBase64(Base64.getEncoder().encodeToString(attachment.getFileData()));
+                dto.setExtractedText("");
+            } else {
+                dto.setFileDataBase64("");
+                try (ByteArrayInputStream stream = new ByteArrayInputStream(attachment.getFileData())){
+                    String extracted = tika.parseToString(stream);
+                    dto.setExtractedText(extracted.trim());
+                } catch (Exception e) {
+                    logger.error("Failed to extract text from attachment", e);
+                    dto.setExtractedText("[Text Extraction failed for this document]");
+                }
+            }
         } else {
+            dto.setExtractedText("");
             dto.setFileDataBase64("");
+            dto.setFileSizeSummary("0 KB");
         }
 //        dto.setFileDataBase64("");
 
         if (attachment.getFileData() != null) {
-            dto.setFileSizeSummary((attachment.getFileData().length / 1024) + " KB (Raw binary data excluded from payload)");
+
         } else {
             dto.setFileSizeSummary("0 KB");
         }

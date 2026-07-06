@@ -27,4 +27,5 @@ public class EmailResponseDTO {
     private boolean isRepeat;
     private String status;
     private boolean inReplyTo;
+    private Long contactId;
 }
