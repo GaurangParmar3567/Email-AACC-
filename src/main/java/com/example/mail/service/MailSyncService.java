@@ -2,11 +2,8 @@ package com.example.mail.service;
 
 import com.example.mail.config.EmailCleaner;
 import com.example.mail.config.MailProperties;
-import com.example.mail.model.Attachment;
-import com.example.mail.model.ContactAction;
-import com.example.mail.model.Email;
-import com.example.mail.repository.ContactActionRepository;
-import com.example.mail.repository.EmailRepository;
+import com.example.mail.model.*;
+import com.example.mail.repository.*;
 import lombok.var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +16,7 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
@@ -30,6 +28,9 @@ public class MailSyncService {
     private final EmailRepository emailRepository;
     private final MailProperties mailProperties;
     private final ContactActionRepository contactActionRepository;
+    private final SkillMasterRepo skillMasterRepository;
+    private final PriorityMasterRepo priorityMasterRepository;
+    private final UserMasterRepo userMasterRepo;
 
 //    @Value("${mail.imap.host}")
 //    private String host;
@@ -46,10 +47,13 @@ public class MailSyncService {
 //    @Value("${mail.store.protocol}")
 //    private String protocol;
 
-    public MailSyncService(EmailRepository emailRepository, MailProperties mailProperties, ContactActionRepository contactActionRepository) {
+    public MailSyncService(EmailRepository emailRepository, MailProperties mailProperties, ContactActionRepository contactActionRepository, SkillMasterRepo skillMasterRepository, PriorityMasterRepo priorityMasterRepository, UserMasterRepo userMasterRepo) {
         this.emailRepository = emailRepository;
         this.mailProperties = mailProperties;
         this.contactActionRepository = contactActionRepository;
+        this.skillMasterRepository = skillMasterRepository;
+        this.priorityMasterRepository = priorityMasterRepository;
+        this.userMasterRepo = userMasterRepo;
         logger.info("MailSyncService initialized with EmailRepository.");
     }
 
@@ -76,22 +80,22 @@ public class MailSyncService {
             props.put("mail." + account.getProtocol() + ".host", account.getHost());
             props.put("mail." + account.getProtocol() + ".port", String.valueOf(account.getPort()));
             props.put("mail." + account.getProtocol() + ".auth", "true");
-            props.put("mail." + account.getProtocol() + ".ssl.enable", "true");
-            props.put("mail." + account.getProtocol() + ".ssl.trust", "*");
+//            props.put("mail." + account.getProtocol() + ".ssl.enable", "true");
+//            props.put("mail." + account.getProtocol() + ".ssl.trust", "*");
             props.put("mail." + account.getProtocol() + ".connectiontimeout", "20000");
             props.put("mail." + account.getProtocol() + ".timeout", "20000");
-            props.put("mail." + account.getProtocol() + ".auth.mechanisms", "LOGIN PLAIN");
+//            props.put("mail." + account.getProtocol() + ".auth.mechanisms", "LOGIN PLAIN");
 
-            props.put("mail." + account.getProtocol() + ".socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            props.put("mail." + account.getProtocol() + ".socketFactory.fallback", "false");
-            props.put("mail." + account.getProtocol() + ".socketFactory.port", String.valueOf(account.getPort()));
+//            props.put("mail." + account.getProtocol() + ".socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+//            props.put("mail." + account.getProtocol() + ".socketFactory.fallback", "false");
+//            props.put("mail." + account.getProtocol() + ".socketFactory.port", String.valueOf(account.getPort()));
 
-            props.put("mail.debug", "true");
-            props.put("mail.debug.auth", "true");
+//            props.put("mail.debug", "true");
+//            props.put("mail.debug.auth", "true");
 
             Session session = Session.getInstance(props);
             store = session.getStore(account.getProtocol());
-            session.setDebug(true);
+//            session.setDebug(true);
             logger.info("Attempting standard authentication connection for user: {}", account.getUsername());
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
             logger.info("Successfully established connection to corporate mail store.");
@@ -257,13 +261,13 @@ public class MailSyncService {
         boolean isRepeat = emailRepository.existsBySenderAndSubject(email.getSender(), email.getSubject());
         email.setRepeatFlag(isRepeat);
 
-        email.setSkillId(determineSkillId(email));
+//        email.setSkillId(determineSkillId(email));
         email.setAssigned(false);
         email.setResponded(false);
         email.setSource("EMail");
         email.setStatus("New");
         email.setContactType("Email");
-        email.setPriority("Priority_3_Normal");
+//        email.setPriority("Priority_3_Normal");
         email.setTimezone(0);
         Long currentTime = System.currentTimeMillis();
         email.setArrivalTime(currentTime);
@@ -271,9 +275,9 @@ public class MailSyncService {
         //dummy
         email.setOpenTime(currentTime);
         email.setOpenDuration(20);
-        email.setAgentId(3L);
-        email.setAgentFirstName("demsmaker");
-        email.setAgentLastName("demsmaker");
+//        email.setAgentId(3L);
+//        email.setAgentFirstName("demsmaker");
+//        email.setAgentLastName("demsmaker");
 
         email.setAttachments(new ArrayList<>());
         parseContent(message, email);
@@ -288,7 +292,7 @@ public class MailSyncService {
         }
         String cleanedBody = EmailCleaner.cleanBody(email.getBody());
         email.setBody(cleanedBody);
-        determineSkillset(email);
+        determineSkillsetAndPriority(email);
         emailRepository.save(email);
         logger.info("[{}] Saved email ID: {}. Attachments count: {}", currentAccountUsername, email.getMessageId(), email.getAttachments().size());
         createInitialContactAction(email, currentAccountUsername);
@@ -412,20 +416,50 @@ public class MailSyncService {
         return (System.currentTimeMillis() / 1000) % 1000000L;
     }
 
-    private void determineSkillset(Email email) {
-        String body = email.getBody() != null ? email.getBody().toLowerCase() : "";
+    private void determineSkillsetAndPriority(Email email) {
         String subject = email.getSubject() != null ? email.getSubject().toLowerCase() : "";
 
-        if (subject.contains("loan") || body.contains("loan")) {
-            email.setSkillsetId(101L);
-            email.setSkillsetName("Loan_Processing");
-        } else if (subject.contains("credit") || body.contains("credit")) {
-            email.setSkillsetId(102L);
-            email.setSkillsetName("Credit_Card");
+        List<SkillMaster> allSkills = skillMasterRepository.findAll();
+        SkillMaster matchedSkill = null;
+
+        for (SkillMaster skill : allSkills) {
+            if (skill.getKeywords() != null) {
+                String[] keywordArray = skill.getKeywords().split(",");
+                for (String keyword : keywordArray) {
+                    if (subject.contains(keyword.trim().toLowerCase())) {
+                        matchedSkill = skill;
+                        break;
+                    }
+                }
+            }
+            if (matchedSkill != null) break;
+        }
+
+        if (matchedSkill != null) {
+            email.setSkillsetId(matchedSkill.getId());
+            email.setSkillsetName(matchedSkill.getName());
+            email.setSkillId(matchedSkill.getId());
         } else {
             email.setSkillsetId(16L);
             email.setSkillsetName("EM_CHK_CHECKER");
+            email.setSkillId(16L);
         }
+
+        List<PriorityMaster> allPriorities = priorityMasterRepository.findAll();
+        String matchedPriority = "Priority_3_Normal";
+
+        for (PriorityMaster priority : allPriorities) {
+            if (priority.getKeywords() != null) {
+                String[] keywordArray = priority.getKeywords().split(",");
+                for (String keyword : keywordArray) {
+                    if (subject.contains(keyword.trim().toLowerCase())) {
+                        matchedPriority = priority.getPriorityLevel();
+                        break;
+                    }
+                }
+            }
+        }
+        email.setPriority(matchedPriority);
     }
 
     private void createInitialContactAction(Email email, String currentAccountUsername) {
