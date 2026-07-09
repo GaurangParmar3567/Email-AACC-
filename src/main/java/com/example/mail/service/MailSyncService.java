@@ -80,8 +80,8 @@ public class MailSyncService {
             props.put("mail." + account.getProtocol() + ".host", account.getHost());
             props.put("mail." + account.getProtocol() + ".port", String.valueOf(account.getPort()));
             props.put("mail." + account.getProtocol() + ".auth", "true");
-//            props.put("mail." + account.getProtocol() + ".ssl.enable", "true");
-//            props.put("mail." + account.getProtocol() + ".ssl.trust", "*");
+            props.put("mail." + account.getProtocol() + ".ssl.enable", "true");
+            props.put("mail." + account.getProtocol() + ".ssl.trust", "*");
             props.put("mail." + account.getProtocol() + ".connectiontimeout", "20000");
             props.put("mail." + account.getProtocol() + ".timeout", "20000");
 //            props.put("mail." + account.getProtocol() + ".auth.mechanisms", "LOGIN PLAIN");
