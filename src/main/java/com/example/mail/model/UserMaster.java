@@ -15,12 +15,6 @@ public class UserMaster {
 
     private String firstName;
     private String lastName;
-
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "user_skills",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "skill_id")
-    )
-    private Set<SkillMaster> skillSet = new HashSet<>();
+    private Long agentId;
+    private Long skillId;
 }

@@ -1,11 +1,14 @@
 package com.example.mail.controller;
 
 import com.example.mail.dto.MyNamespacePrefixMapper;
+import com.example.mail.dto.soapContact.*;
 import com.example.mail.dto.soapnew.*;
 import com.example.mail.model.Attachment;
 import com.example.mail.model.ContactAction;
 import com.example.mail.model.Email;
+import com.example.mail.model.UserMaster;
 import com.example.mail.repository.EmailRepository;
+import com.example.mail.repository.UserMasterRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -13,12 +16,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.PropertyException;
-import javax.xml.bind.Unmarshaller;
+import javax.xml.bind.*;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -29,18 +30,20 @@ public class ContactSoapController {
 
     private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
     private final EmailRepository emailRepository;
+    private final UserMasterRepo userMasterRepository;
     private static final JAXBContext RESPONSE_CONTEXT;
 
     static {
         try {
-            RESPONSE_CONTEXT = JAXBContext.newInstance(SoapResponseEnvelope.class);
+            RESPONSE_CONTEXT = JAXBContext.newInstance(SoapResponseEnvelope.class, SoapContactResponseEnvelope.class);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize JAXB context", e);
         }
     }
 
-    public ContactSoapController(EmailRepository emailRepository) {
+    public ContactSoapController(EmailRepository emailRepository, UserMasterRepo userMasterRepository) {
         this.emailRepository = emailRepository;
+        this.userMasterRepository = userMasterRepository;
     }
 
     @PostMapping(value = "/getContactAACC")
@@ -194,6 +197,79 @@ public class ContactSoapController {
 
         } catch (Exception e) {
             logger.error("Critical Failure while processing legacy SOAP action mapping: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
+        }
+    }
+
+    @PostMapping(value = "/getContact")
+    public ResponseEntity<String> getContact(@RequestBody String rawXmlRequestBody) throws JAXBException {
+        try {
+            JAXBContext requestContext = JAXBContext.newInstance(SoapContactRequestEnvelope.class);
+            Unmarshaller unmarshaller = requestContext.createUnmarshaller();
+            SoapContactRequestEnvelope requestEnvelope = (SoapContactRequestEnvelope) unmarshaller.unmarshal(new StringReader(rawXmlRequestBody));
+            Long agentId = requestEnvelope.getBody().getGetContact().getStrAgentID();
+            logger.info("Received SOAP request to get Contact ID for agentID: {}", agentId);
+
+            UserMaster user = userMasterRepository.findByAgentId(agentId);
+            if (user == null) {
+                logger.error("User not found for agentID: {}", agentId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found for agentID: " + agentId);
+            }
+            List<Email> emails = emailRepository.findTopPendingEmailsBySkill(user.getSkillId());
+            long contactId = 0;
+            if (emails != null && !emails.isEmpty()) {
+                Email email = emails.get(0);
+                contactId = email.getContactId();
+                email.setAssigned(true);
+                email.setAssignedTime(LocalDateTime.now());
+                email.setAgentId(user.getAgentId());
+                email.setAgentFirstName(user.getFirstName());
+                email.setAgentLastName(user.getLastName());
+                emailRepository.save(email);
+            }
+
+
+            SoapContactResponseEnvelope responseEnvelope = new SoapContactResponseEnvelope();
+            SoapContactResponseBody body = new SoapContactResponseBody();
+            GetContactResponse getContactResponse = new GetContactResponse();
+            GetContactResult result = new GetContactResult();
+
+            result.setContactId(contactId);
+            if(contactId!=0){
+                result.setMessage("Valid Input");
+            }else{
+                result.setMessage("Invalid Input");
+            }
+            getContactResponse.setGetContactResult(result);
+            body.setGetContactResponse(getContactResponse);
+            responseEnvelope.setBody(body);
+
+            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+
+            try {
+                marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            } catch (PropertyException e) {
+                marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            }
+
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(responseEnvelope, writer);
+
+            logger.debug("Generated SOAP response for Agent ID {}: {}", agentId, writer.toString());
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_XML)
+                    .body(writer.toString());
+        } catch (NumberFormatException e) {
+            logger.error("Failed to parse Agent ID string format: ", e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("<error>Invalid Agent ID format</error>");
+        } catch (Exception e) {
+            logger.error("Critical Failure while processing legacy GetContact SOAP action mapping: ", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
         }

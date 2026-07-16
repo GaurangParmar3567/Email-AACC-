@@ -30,6 +30,7 @@ public class EmailDetailDTO {
         private String source;
         private String status;
         private String priority;
+        private Long priorityId;
         private Long skillsetId;
         private String skillsetName;
         private Long skillId;

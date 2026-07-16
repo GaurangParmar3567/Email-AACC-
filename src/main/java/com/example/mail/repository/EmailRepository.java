@@ -23,4 +23,7 @@ public interface EmailRepository extends JpaRepository<Email, Long> {
 
     List<Email> findByContactId(Long contactId);
     Email findByMessageId(String messageId);
+
+    @Query("SELECT e FROM Email e WHERE e.skillId = :skillId AND e.status = 'Open' AND e.assigned = false ORDER BY e.priorityId ASC, e.arrivalTime ASC")
+    List<Email> findTopPendingEmailsBySkill(@Param("skillId") Long skillId);
 }

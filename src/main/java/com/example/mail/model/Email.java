@@ -3,6 +3,7 @@ package com.example.mail.model;
 import lombok.*;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -55,7 +56,9 @@ public class Email {
     private boolean repeatFlag;
     private Long skillId;
     private boolean assigned;
+    private LocalDateTime assignedTime;
     private boolean responded;
+    private LocalDateTime respondedTime;
 
     // --- Avaya Contact Fields ---
     @Column(name = "contact_id")
@@ -79,6 +82,7 @@ public class Email {
     private String skillsetName;
 
     private String priority;  // Priority_1_Highest, etc.
+    private Long priorityId;
 
     private Integer timezone;
 

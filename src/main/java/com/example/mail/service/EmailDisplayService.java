@@ -1,5 +1,7 @@
 package com.example.mail.service;
 
+import com.example.mail.dto.request.ContactRequestDTO;
+import com.example.mail.dto.response.ContactResponseDTO;
 import com.example.mail.dto.response.EmailDetailDTO;
 import com.example.mail.dto.response.EmailThreadResponseDTO;
 import com.example.mail.model.Attachment;
@@ -8,6 +10,7 @@ import com.example.mail.model.Email;
 import com.example.mail.dto.EmailResponseDTO;
 import com.example.mail.repository.AttachmentRepository;
 import com.example.mail.repository.EmailRepository;
+import com.example.mail.repository.SkillMasterRepo;
 import org.apache.tika.Tika;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +29,14 @@ public class EmailDisplayService {
 
     private final EmailRepository emailRepository;
     private final AttachmentRepository attachmentRepository;
+    private final SkillMasterRepo skillMasterRepository;
     private final Tika tika = new Tika();
     private final Logger logger = LoggerFactory.getLogger("EMAIL_DISPLAY_SERVICE_LOGGER");
 
-    public EmailDisplayService(EmailRepository emailRepository, AttachmentRepository attachmentRepository) {
+    public EmailDisplayService(EmailRepository emailRepository, AttachmentRepository attachmentRepository, SkillMasterRepo skillMasterRepository) {
         this.emailRepository = emailRepository;
         this.attachmentRepository = attachmentRepository;
+        this.skillMasterRepository = skillMasterRepository;
     }
 
     public List<EmailResponseDTO> getUnassignedEmails() {
@@ -158,6 +163,7 @@ public class EmailDisplayService {
         routing.setSource(email.getSource());
         routing.setStatus(email.getStatus());
         routing.setPriority(email.getPriority());
+        routing.setPriorityId(email.getPriorityId());
         routing.setSkillsetId(email.getSkillsetId());
         routing.setSkillsetName(email.getSkillsetName());
         routing.setSkillId(email.getSkillId());

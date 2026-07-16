@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserMasterRepo extends JpaRepository<UserMaster, Long> {
+    UserMaster findByAgentId(Long agentId);
 }

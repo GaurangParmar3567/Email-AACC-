@@ -265,19 +265,14 @@ public class MailSyncService {
         email.setAssigned(false);
         email.setResponded(false);
         email.setSource("EMail");
-        email.setStatus("New");
+        email.setStatus("Open");
         email.setContactType("Email");
-//        email.setPriority("Priority_3_Normal");
         email.setTimezone(0);
         Long currentTime = System.currentTimeMillis();
         email.setArrivalTime(currentTime);
 
-        //dummy
         email.setOpenTime(currentTime);
         email.setOpenDuration(20);
-//        email.setAgentId(3L);
-//        email.setAgentFirstName("demsmaker");
-//        email.setAgentLastName("demsmaker");
 
         email.setAttachments(new ArrayList<>());
         parseContent(message, email);
@@ -354,7 +349,6 @@ public class MailSyncService {
 
         if (part.isMimeType("text/plain") && email.getBody() == null) {
             email.setBody(part.getContent().toString());
-//            email.setText(part.getContent().toString());
             email.setHtml(false);
             String currentText = email.getBody() != null ? email.getBody() : "";
             email.setText(currentText + part.getContent().toString());
@@ -447,6 +441,7 @@ public class MailSyncService {
 
         List<PriorityMaster> allPriorities = priorityMasterRepository.findAll();
         String matchedPriority = "Priority_3_Normal";
+        Long matchedPriorityId = 3L;
 
         for (PriorityMaster priority : allPriorities) {
             if (priority.getKeywords() != null) {
@@ -454,12 +449,14 @@ public class MailSyncService {
                 for (String keyword : keywordArray) {
                     if (subject.contains(keyword.trim().toLowerCase())) {
                         matchedPriority = priority.getPriorityLevel();
+                        matchedPriorityId = priority.getId();
                         break;
                     }
                 }
             }
         }
         email.setPriority(matchedPriority);
+        email.setPriorityId(matchedPriorityId);
     }
 
     private void createInitialContactAction(Email email, String currentAccountUsername) {
@@ -478,9 +475,6 @@ public class MailSyncService {
         action.setActionType("Email");
         action.setCreationTime(System.currentTimeMillis());
         action.setTimeAllocated(20);
-//        action.setOutboundDispositionCode();
-//        action.setOutboundTalkTime();
-
         contactActionRepository.save(action);
     }
 }

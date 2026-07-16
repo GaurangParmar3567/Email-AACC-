@@ -34,26 +34,30 @@ public class UserMasterService {
         UserMaster user = new UserMaster();
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
+        user.setAgentId(dto.getAgentId());
 
-        // Convert plain IDs from the payload into managed Hibernate entities
-        if (dto.getSkillIds() != null && !dto.getSkillIds().isEmpty()) {
-            List<SkillMaster> matchedSkills = skillRepository.findAllById(dto.getSkillIds());
-            user.setSkillSet(new HashSet<>(matchedSkills));
-        }
+        SkillMaster skill = skillRepository.findById(dto.getSkillId())
+                .orElseThrow(() -> new RuntimeException("Skill not found with id: " + dto.getSkillId()));
+        user.setSkillId(skill.getId());
 
-        return userRepository.save(user); // ID is automatically generated here
+        return userRepository.save(user);
     }
 
     public UserMaster editUser(Long id, UserRequestDTO dto) {
         UserMaster existing = getUserById(id);
-        existing.setFirstName(dto.getFirstName());
-        existing.setLastName(dto.getLastName());
-
-        if (dto.getSkillIds() != null) {
-            List<SkillMaster> matchedSkills = skillRepository.findAllById(dto.getSkillIds());
-            existing.setSkillSet(new HashSet<>(matchedSkills));
-        } else {
-            existing.getSkillSet().clear();
+        if(dto.getFirstName()!=null){
+            existing.setFirstName(dto.getFirstName());
+        }
+        if(dto.getLastName()!=null){
+            existing.setLastName(dto.getLastName());
+        }
+        if(dto.getAgentId()!=null){
+            existing.setAgentId(dto.getAgentId());
+        }
+        if (dto.getSkillId() != null){
+            SkillMaster skill = skillRepository.findById(dto.getSkillId())
+                    .orElseThrow(() -> new RuntimeException("Skill not found with id: " + dto.getSkillId()));
+            existing.setSkillId(skill.getId());
         }
 
         return userRepository.save(existing);
