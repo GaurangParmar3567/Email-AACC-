@@ -26,7 +26,10 @@ public class Email {
     @Column(name = "in_reply_to")
     private String inReplyTo;
 
+    @Column(length = 4000)
     private String sender;
+
+    @Column(length = 4000)
     private String recipient;
 
     @Column(length = 4000)
@@ -35,6 +38,7 @@ public class Email {
     @Column(length = 4000)
     private String bcc;
 
+    @Column(length = 4000)
     private String subject;
 
     @Lob
@@ -107,10 +111,10 @@ public class Email {
     @Column(name = "agent_last_name")
     private String agentLastName;
 
-    @Column(name = "mail_to")
+    @Column(name = "mail_to", length = 4000)
     private String mailTo;
 
-    @Column(name = "mail_from")
+    @Column(name = "mail_from", length = 4000)
     private String mailFrom;
 
     @Column(name = "mail_cc")
