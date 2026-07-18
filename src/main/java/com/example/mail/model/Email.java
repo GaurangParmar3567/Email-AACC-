@@ -26,19 +26,22 @@ public class Email {
     @Column(name = "in_reply_to")
     private String inReplyTo;
 
-    @Column(length = 4000)
+    @Column(length = 500)
     private String sender;
 
-    @Column(length = 4000)
+//    @Column(length = 500)
+    @Lob
     private String recipient;
 
-    @Column(length = 4000)
+//    @Column(length = 1000)
+    @Lob
     private String cc;
 
-    @Column(length = 4000)
+//    @Column(length = 1000)
+    @Lob
     private String bcc;
 
-    @Column(length = 4000)
+    @Column(length = 1000)
     private String subject;
 
     @Lob
@@ -75,8 +78,10 @@ public class Email {
     @Column(name = "original_subject")
     private String originalSubject;
 
+    @Column(length = 100)
     private String source;  // EMail, Transfer_to_Skillset, etc.
 
+    @Column(length = 100)
     private String status;  // New, Open, Closed, etc.
 
     @Column(name = "skillset_id")
@@ -111,13 +116,16 @@ public class Email {
     @Column(name = "agent_last_name")
     private String agentLastName;
 
-    @Column(name = "mail_to", length = 4000)
+    @Column(name = "mail_to")
+    @Lob
     private String mailTo;
 
-    @Column(name = "mail_from", length = 4000)
+    @Column(name = "mail_from")
+    @Lob
     private String mailFrom;
 
     @Column(name = "mail_cc")
+    @Lob
     private String mailCc;
 
     // --- Relations ---
@@ -127,7 +135,7 @@ public class Email {
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ContactAction> contactActions = new ArrayList<>();
 
-    @Column(length = 4000)
+    @Lob
     private String referencesHeader;
 
     @ManyToOne(fetch = FetchType.LAZY)

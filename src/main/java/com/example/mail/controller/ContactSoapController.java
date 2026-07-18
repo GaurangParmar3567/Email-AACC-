@@ -24,8 +24,8 @@ import java.util.List;
 
 @RestController
 @RequestMapping(value = "/email-service/sbi",
-        consumes = MediaType.APPLICATION_XML_VALUE,
-        produces = MediaType.APPLICATION_XML_VALUE)
+        consumes = MediaType.TEXT_XML_VALUE,
+        produces = MediaType.TEXT_XML_VALUE)
 public class ContactSoapController {
 
     private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
@@ -218,6 +218,7 @@ public class ContactSoapController {
                         .body("User not found for agentID: " + agentId);
             }
             List<Email> emails = emailRepository.findTopPendingEmailsBySkill(user.getSkillId());
+            logger.info("Found {} pending emails for skill ID: {}", emails.size(), user.getSkillId());
             long contactId = 0;
             if (emails != null && !emails.isEmpty()) {
                 Email email = emails.get(0);

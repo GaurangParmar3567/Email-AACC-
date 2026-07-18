@@ -28,6 +28,7 @@ public class ContactAction {
     @Column(name = "contact_id", insertable = false, updatable = false)
     private Long contactId;
 
+    @Lob
     private String subject;
 
     @Lob
@@ -36,11 +37,13 @@ public class ContactAction {
     @Lob
     private String textHtml;
 
-    @Column(name = "callback_status")
+    @Column(name = "callback_status", length = 100)
     private String callbackStatus;  // Unspecified, Contact_Transferred, etc.
 
+    @Lob
     private String source;  // EMail_from_Customer, Transfer_to_Skillset, etc.
 
+    @Lob
     private String comment;
 
     @Column(name = "agent_id")
@@ -74,12 +77,15 @@ public class ContactAction {
     private Long creationTime;  // milliseconds
 
     @Column(name = "mail_to")
+    @Lob
     private String mailTo;
 
     @Column(name = "mail_from")
+    @Lob
     private String mailFrom;
 
     @Column(name = "mail_cc")
+    @Lob
     private String mailCc;
 
     @OneToMany(mappedBy = "contactAction", cascade = CascadeType.ALL, orphanRemoval = true)
