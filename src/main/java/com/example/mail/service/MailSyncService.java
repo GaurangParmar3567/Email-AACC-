@@ -434,14 +434,16 @@ public class MailSyncService {
             email.setSkillsetName(matchedSkill.getName());
             email.setSkillId(matchedSkill.getId());
         } else {
-            email.setSkillsetId(16L);
-            email.setSkillsetName("EM_CHK_CHECKER");
-            email.setSkillId(16L);
+            SkillMaster defaultSkill = skillMasterRepository.findByName(mailProperties.getDefaultSkillName());
+            email.setSkillsetId(defaultSkill.getId());
+            email.setSkillsetName(defaultSkill.getName());
+            email.setSkillId(defaultSkill.getId());
         }
 
         List<PriorityMaster> allPriorities = priorityMasterRepository.findAll();
-        String matchedPriority = "Priority_3_Normal";
-        Long matchedPriorityId = 3L;
+        PriorityMaster defaultPriority = priorityMasterRepository.findByPriorityLevel(mailProperties.getDefaultPriorityName());
+        String matchedPriority = defaultPriority.getPriorityLevel();
+        Long matchedPriorityId = defaultPriority.getId();
 
         for (PriorityMaster priority : allPriorities) {
             if (priority.getKeywords() != null) {
@@ -457,6 +459,7 @@ public class MailSyncService {
         }
         email.setPriority(matchedPriority);
         email.setPriorityId(matchedPriorityId);
+        logger.debug("Skill: {}, Priority: {}", email.getSkillsetName(), email.getPriority());
     }
 
     private void createInitialContactAction(Email email, String currentAccountUsername) {

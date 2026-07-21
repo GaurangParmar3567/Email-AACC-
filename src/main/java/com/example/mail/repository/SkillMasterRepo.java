@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface SkillMasterRepo extends JpaRepository<SkillMaster, Long> {
+    SkillMaster findByName(String defaultSkillName);
 }

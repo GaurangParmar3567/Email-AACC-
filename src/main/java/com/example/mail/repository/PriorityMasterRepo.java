@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface PriorityMasterRepo extends JpaRepository<PriorityMaster, Long> {
+    PriorityMaster findByPriorityLevel(String priorityLevel);
 }
