@@ -1,0 +1,139 @@
+26-07-28 12:41:03.362 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 12:41:05.660 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 12:41:05.660 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 12:41:05.696 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 12:41:07.414 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 12:41:08.096 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 2
+26-07-28 12:41:08.573 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Processing new email. ID: <6a634f8fc3363_1360d8945563@51b106262e46.mail> | Subject: ZACH B MORE CONTENT ADDED
+26-07-28 12:41:09.210 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [New Thread] No parent found. Generated new Contact ID: 3669210
+26-07-28 12:41:09.572 [scheduling-1] DEBUG MAIL_SYNC_LOGGER - Parsing part with Content-Type: TEXT/HTML; charset=utf-8
+26-07-28 12:41:11.870 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Saved email ID: <6a634f8fc3363_1360d8945563@51b106262e46.mail>. Attachments count: 0
+26-07-28 12:41:12.516 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Successfully archived email: ZACH B MORE CONTENT ADDED
+26-07-28 12:41:12.791 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Processing new email. ID: <6a63ecb12da5a_1360e8489ed@8550b6ef80aa.mail> | Subject: MOONPAY XGAMES CLIPPING!
+26-07-28 12:41:13.519 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [New Thread] No parent found. Generated new Contact ID: 3673519
+26-07-28 12:41:13.838 [scheduling-1] DEBUG MAIL_SYNC_LOGGER - Parsing part with Content-Type: TEXT/HTML; charset=utf-8
+26-07-28 12:41:15.247 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Saved email ID: <6a63ecb12da5a_1360e8489ed@8550b6ef80aa.mail>. Attachments count: 0
+26-07-28 12:41:15.801 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Successfully archived email: MOONPAY XGAMES CLIPPING!
+26-07-28 12:41:16.807 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 12:46:05.663 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 12:46:05.663 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 12:46:05.666 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 12:46:07.417 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 12:46:07.998 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 12:46:08.804 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 12:48:07.858 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 12:48:10.006 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 12:48:10.008 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 12:48:10.030 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 12:48:12.690 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 12:48:13.286 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 12:48:14.072 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 12:53:10.013 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 12:53:10.014 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 12:53:10.017 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 12:53:11.576 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 12:53:12.099 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 12:53:12.856 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 12:58:10.010 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 12:58:10.010 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 12:58:10.013 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 12:58:11.648 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 12:58:12.218 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 12:58:13.134 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:03:10.021 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:03:10.021 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:03:10.021 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:03:11.712 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:03:12.263 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:03:13.050 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:06:58.416 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 13:07:00.544 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:07:00.544 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:07:00.567 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:07:02.705 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:07:03.356 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:07:04.156 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:10:38.658 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 13:10:40.891 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:10:40.891 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:10:40.927 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:10:42.471 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:10:43.160 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:10:43.930 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:11:42.287 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 13:11:44.710 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:11:44.711 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:11:44.736 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:11:46.226 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:11:46.732 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:11:47.458 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:30:50.215 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 13:30:52.300 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:30:52.301 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:30:52.327 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:30:54.082 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:30:54.653 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:30:55.455 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:44:25.896 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 13:44:27.932 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:44:27.932 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:44:27.955 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:44:29.914 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:44:30.525 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:44:31.351 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:49:27.942 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:49:27.942 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:49:27.958 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:49:29.514 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:49:30.073 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:49:30.871 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 13:59:19.561 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 13:59:22.169 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 13:59:22.169 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 13:59:22.198 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 13:59:23.853 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 13:59:24.377 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 13:59:25.104 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:04:22.170 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:04:22.171 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:04:22.171 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:04:25.370 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:04:27.301 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:04:29.325 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:06:22.256 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-07-28 14:06:25.430 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:06:25.430 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:06:25.471 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:06:27.202 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:06:27.777 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:06:28.621 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:11:25.440 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:11:25.440 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:11:25.440 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:11:27.311 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:11:27.936 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:11:28.812 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:16:25.440 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:16:25.441 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:16:25.444 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:16:27.275 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:16:27.962 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:16:29.019 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:21:25.439 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:21:25.439 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:21:25.448 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:21:27.095 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:21:27.655 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:21:28.422 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:26:25.437 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:26:25.437 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:26:25.463 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:26:27.653 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:26:30.569 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:26:31.570 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
+26-07-28 14:31:25.439 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-07-28 14:31:25.439 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-07-28 14:31:25.442 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-07-28 14:31:27.210 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-07-28 14:31:27.811 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 0
+26-07-28 14:31:29.396 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================

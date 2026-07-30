@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Common Properties -->
+    <property name="log-path" value="${LOG_PATH:-logs}" />
+    <property name="max-file-size" value="10MB" />
+    <property name="file-pattern" value="%d{yy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+
+    <!-- Console Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Main Application Logs -->
+    <appender name="MAIN_APP" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log-path}/Email-application.log</file>
+        <encoder><pattern>${file-pattern}</pattern></encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log-path}/Email-application.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max-file-size}</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Error Logs -->
+    <appender name="ERROR_LOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log-path}/Email-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder><pattern>${file-pattern}</pattern></encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log-path}/Email-error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max-file-size}</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== CONTROLLER APPENDERS ========== -->
+
+    <appender name="MAIL_SYNC" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log-path}/Email-mail-sync.log</file>
+        <encoder><pattern>${file-pattern}</pattern></encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log-path}/Email-mail-sync.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max-file-size}</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="MAIL_SERVICES_AVAAYA" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log-path}/Email-mail-services-avaaya.log</file>
+        <encoder><pattern>${file-pattern}</pattern></encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log-path}/Email-mail-services-avaaya.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max-file-size}</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ========== ASYNC APPENDERS ========== -->
+    <appender name="ASYNC_MAIN" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="MAIN_APP" />
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+
+    <appender name="ASYNC_ERROR" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="ERROR_LOG" />
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+    </appender>
+
+    <!-- ========== LOGGERS ========== -->
+
+    <logger name="MAIL_SYNC_LOGGER" level="DEBUG" additivity="false">
+        <appender-ref ref="MAIL_SYNC" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+
+    <logger name="MAIL_SERVICES_AVAAYA_LOGGER" level="DEBUG" additivity="false">
+        <appender-ref ref="MAIL_SERVICES_AVAAYA" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+
+    <!-- Root Logger -->
+    <root level="INFO">
+        <appender-ref ref="ASYNC_MAIN" />
+        <appender-ref ref="ASYNC_ERROR" />
+        <appender-ref ref="CONSOLE" />
+    </root>
+
+    <!-- Status Listener -->
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+    <!-- Shutdown hook -->
+    <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook" />
+</configuration>
