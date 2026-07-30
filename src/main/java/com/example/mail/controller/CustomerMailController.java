@@ -8,11 +8,11 @@ import com.example.mail.repository.ContactActionRepository;
 import com.example.mail.repository.MakerTransferStatusRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 import java.text.SimpleDateFormat;
@@ -21,7 +21,7 @@ import java.text.SimpleDateFormat;
  * Replacement for the legacy GetCustomerMailforChecker WebMethod.
  * Authentication and host/contact-id validation are intentionally not included.
  */
-@Controller
+@RestController
 @RequestMapping("/email-service/sbi")
 public class CustomerMailController {
 
@@ -41,7 +41,6 @@ public class CustomerMailController {
     }
 
     @GetMapping("/checker")
-    @ResponseBody
     public CustomerMailForReplyDTO getCustomerMailforChecker(
             @RequestParam("ContactID") String contactId) {
 
@@ -86,7 +85,6 @@ public class CustomerMailController {
     }
 
     @GetMapping("/maker")
-    @ResponseBody
     public CustomerMailForReplyDTO getCustomerMailforMaker(
             @RequestParam("ContactID") String contactId) {
 
