@@ -10,6 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/priorities")
+@CrossOrigin(origins = "https://ccdemsuat.sbi:6001")
 public class PriorityMasterController {
 
     private final PriorityMasterService service;

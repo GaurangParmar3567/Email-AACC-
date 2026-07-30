@@ -29,21 +29,26 @@ public class ContactAction {
     private Long contactId;
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String subject;
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String textContent;
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String textHtml;
 
     @Column(name = "callback_status", length = 100)
     private String callbackStatus;  // Unspecified, Contact_Transferred, etc.
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String source;  // EMail_from_Customer, Transfer_to_Skillset, etc.
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String comment;
 
     @Column(name = "agent_id")
@@ -76,15 +81,15 @@ public class ContactAction {
     @Column(name = "creation_time")
     private Long creationTime;  // milliseconds
 
-    @Column(name = "mail_to")
+    @Column(name = "mail_to", columnDefinition = "NVARCHAR(MAX)")
     @Lob
     private String mailTo;
 
-    @Column(name = "mail_from")
+    @Column(name = "mail_from", columnDefinition = "NVARCHAR(MAX)")
     @Lob
     private String mailFrom;
 
-    @Column(name = "mail_cc")
+    @Column(name = "mail_cc", columnDefinition = "NVARCHAR(MAX)")
     @Lob
     private String mailCc;
 

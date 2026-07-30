@@ -195,9 +195,9 @@ public class MailSyncService {
                 String refId = refIds[i].trim();
                 if (refId.isEmpty()) continue;
 
-                var ancestorOpt = emailRepository.findByMessageId(refId);
-                if (ancestorOpt!=null) {
-                    resolvedParent = ancestorOpt;
+                Email ancestor = emailRepository.findByMessageId(refId);
+                if (ancestor != null) {
+                    resolvedParent = ancestor;
                     break;
                 }
             }

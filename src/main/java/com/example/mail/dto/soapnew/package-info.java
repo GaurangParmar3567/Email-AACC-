@@ -1,15 +1,15 @@
 @javax.xml.bind.annotation.XmlSchema(
         xmlns = {
                 @javax.xml.bind.annotation.XmlNs(
-                        prefix = "soap",
+                        prefix = "",
                         namespaceURI = "http://schemas.xmlsoap.org/soap/envelope/"
                 ),
                 @javax.xml.bind.annotation.XmlNs(
-                        prefix = "xsi",
+                        prefix = "",
                         namespaceURI = "http://www.w3.org/2001/XMLSchema-instance"
                 ),
                 @javax.xml.bind.annotation.XmlNs(
-                        prefix = "xsd",
+                        prefix = "",
                         namespaceURI = "http://www.w3.org/2001/XMLSchema"
                 )
         }

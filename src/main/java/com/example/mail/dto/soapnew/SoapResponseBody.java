@@ -7,10 +7,7 @@ import javax.xml.bind.annotation.XmlElement;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SoapResponseBody {
 
-    @XmlElement(
-            name = "ReadContactResponse",
-            namespace = "http://nortel.com/CCMMAgentWebservices/"
-    )
+    @XmlElement(name = "ReadContactResponse")
     private ReadContactResponse readContactResponse;
 
     public ReadContactResponse getReadContactResponse() { return readContactResponse; }

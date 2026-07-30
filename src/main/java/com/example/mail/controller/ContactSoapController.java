@@ -9,6 +9,7 @@ import com.example.mail.model.Email;
 import com.example.mail.model.UserMaster;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.UserMasterRepo;
+import com.example.mail.service.MakerTransferStatusService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -26,11 +27,13 @@ import java.util.List;
 @RequestMapping(value = "/email-service/sbi",
         consumes = MediaType.TEXT_XML_VALUE,
         produces = MediaType.TEXT_XML_VALUE)
+@CrossOrigin(origins = "https://ccdemsuat.sbi:6001")
 public class ContactSoapController {
 
     private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
     private final EmailRepository emailRepository;
     private final UserMasterRepo userMasterRepository;
+    private final MakerTransferStatusService makerTransferStatusService;
     private static final JAXBContext RESPONSE_CONTEXT;
 
     static {
@@ -41,9 +44,11 @@ public class ContactSoapController {
         }
     }
 
-    public ContactSoapController(EmailRepository emailRepository, UserMasterRepo userMasterRepository) {
+    public ContactSoapController(EmailRepository emailRepository, UserMasterRepo userMasterRepository,
+                                 MakerTransferStatusService makerTransferStatusService) {
         this.emailRepository = emailRepository;
         this.userMasterRepository = userMasterRepository;
+        this.makerTransferStatusService = makerTransferStatusService;
     }
 
     @PostMapping(value = "/getContactAACC")
@@ -52,6 +57,12 @@ public class ContactSoapController {
             JAXBContext requestContext = JAXBContext.newInstance(SoapRequestEnvelope.class);
             Unmarshaller unmarshaller = requestContext.createUnmarshaller();
             SoapRequestEnvelope requestEnvelope = (SoapRequestEnvelope) unmarshaller.unmarshal(new StringReader(rawXmlRequestBody));
+
+            if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getReadContact() == null) {
+                logger.warn("Incoming SOAP request is missing the ReadContact payload.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("<error>Invalid SOAP request: missing ReadContact element</error>");
+            }
 
             Long contactId = requestEnvelope.getBody().getReadContact().getId();
             logger.info("Received ReadContact SOAP request for Contact ID: {}", contactId);
@@ -116,7 +127,15 @@ public class ContactSoapController {
             for (Email threadEmail : emailThread) {
                 if (threadEmail.getContactActions() == null) continue;
 
-                for (ContactAction action : threadEmail.getContactActions()) {
+                List<ContactAction> actions = threadEmail.getContactActions();
+                if (actions == null) {
+                    continue;
+                }
+
+                for (ContactAction action : actions) {
+                    if (action == null) {
+                        continue;
+                    }
                     AWActionDTO actionDto = new AWActionDTO();
                     actionDto.setId(action.getActionId());
                     actionDto.setContactID(action.getContactId());

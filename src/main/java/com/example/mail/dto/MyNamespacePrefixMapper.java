@@ -5,9 +5,9 @@ import com.sun.xml.bind.marshaller.NamespacePrefixMapper;
 public class MyNamespacePrefixMapper extends NamespacePrefixMapper {
     @Override
     public String getPreferredPrefix(String namespaceUri, String suggestion, boolean requirePrefix) {
-        if ("http://schemas.xmlsoap.org/soap/envelope/".equals(namespaceUri)) return "soap";
-        if ("http://www.w3.org/2001/XMLSchema-instance".equals(namespaceUri)) return "xsi";
-        if ("http://www.w3.org/2001/XMLSchema".equals(namespaceUri)) return "xsd";
+        if ("http://schemas.xmlsoap.org/soap/envelope/".equals(namespaceUri)) return "";
+        if ("http://www.w3.org/2001/XMLSchema-instance".equals(namespaceUri)) return "";
+        if ("http://www.w3.org/2001/XMLSchema".equals(namespaceUri)) return "";
         return suggestion;
     }
 

@@ -31,12 +31,15 @@ public class Email {
 
 //    @Column(length = 500)
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String recipient;
 
 //    @Column(length = 1000)
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String cc;
 
+    @Column(columnDefinition = "NVARCHAR(MAX)")
 //    @Column(length = 1000)
     @Lob
     private String bcc;
@@ -45,12 +48,15 @@ public class Email {
     private String subject;
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String body;
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String text;
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String bodyHtml;
 
     private boolean isHtml;
@@ -74,8 +80,8 @@ public class Email {
     @Column(name = "customer_id")
     private Long customerId;
 
+    @Column(name = "original_subject", columnDefinition = "NVARCHAR(MAX)")
     @Lob
-    @Column(name = "original_subject")
     private String originalSubject;
 
     @Column(length = 100)
@@ -116,15 +122,15 @@ public class Email {
     @Column(name = "agent_last_name")
     private String agentLastName;
 
-    @Column(name = "mail_to")
+    @Column(name = "mail_to", columnDefinition = "NVARCHAR(MAX)")
     @Lob
     private String mailTo;
 
-    @Column(name = "mail_from")
+    @Column(name = "mail_from", columnDefinition = "NVARCHAR(MAX)")
     @Lob
     private String mailFrom;
 
-    @Column(name = "mail_cc")
+    @Column(name = "mail_cc", columnDefinition = "NVARCHAR(MAX)")
     @Lob
     private String mailCc;
 
@@ -136,6 +142,7 @@ public class Email {
     private List<ContactAction> contactActions = new ArrayList<>();
 
     @Lob
+    @Column(columnDefinition = "NVARCHAR(MAX)")
     private String referencesHeader;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -8,56 +8,54 @@ import javax.xml.bind.annotation.*;
 @Data
 public class ReadContactResult {
 
-    private static final String DT_NS = "http://datatypes.agentwebservices.ccmm.applications.nortel.com";
-
-    @XmlElement(name = "id", namespace = DT_NS)
+    @XmlElement(name = "id")
     private Long id;
 
-    @XmlElement(name = "customerID", namespace = DT_NS)
+    @XmlElement(name = "customerID")
     private Long customerID;
 
-    @XmlElement(name = "originalSubject", namespace = DT_NS)
+    @XmlElement(name = "originalSubject")
     private String originalSubject;
 
-    @XmlElement(name = "source", namespace = DT_NS)
+    @XmlElement(name = "source")
     private String source;
 
-    @XmlElement(name = "status", namespace = DT_NS)
+    @XmlElement(name = "status")
     private String status;
 
-    @XmlElement(name = "skillset", namespace = DT_NS)
+    @XmlElement(name = "skillset")
     private SkillsetDTO skillset;
 
-    @XmlElement(name = "priority", namespace = DT_NS)
+    @XmlElement(name = "priority")
     private String priority;
 
-    @XmlElement(name = "timezone", namespace = DT_NS)
+    @XmlElement(name = "timezone")
     private Integer timezone;
 
-    @XmlElement(name = "arrivalTime", namespace = DT_NS)
+    @XmlElement(name = "arrivalTime")
     private MillisecondsDTO arrivalTime;
 
-    @XmlElement(name = "openTime", namespace = DT_NS)
+    @XmlElement(name = "openTime")
     private MillisecondsDTO openTime;
 
-    @XmlElement(name = "openDuration", namespace = DT_NS)
+    @XmlElement(name = "openDuration")
     private Integer openDuration;
 
-    @XmlElement(name = "MailTo", namespace = DT_NS)
+    @XmlElement(name = "MailTo")
     private String mailTo = "";
 
-    @XmlElement(name = "MailFrom", namespace = DT_NS)
+    @XmlElement(name = "MailFrom")
     private String mailFrom = "";
 
-    @XmlElement(name = "MailCC", namespace = DT_NS)
+    @XmlElement(name = "MailCC")
     private String mailCc = "";
 
-    @XmlElement(name = "contactType", namespace = DT_NS)
+    @XmlElement(name = "contactType")
     private String contactType;
 
-    @XmlElement(name = "agent", namespace = DT_NS)
+    @XmlElement(name = "agent")
     private AgentDTO agent;
 
-    @XmlElement(name = "actionList", namespace = DT_NS)
+    @XmlElement(name = "actionList")
     private ActionListDTO actionList;
 }
