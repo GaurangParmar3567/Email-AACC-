@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "MakerTransferStatus")
-public class MakerTransferStatus {
+@Table(name = "MailSendStatus")
+public class MailSendStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,23 +17,36 @@ public class MakerTransferStatus {
     @Column(name = "FromEmail", nullable = false, length = 100)
     private String fromEmail;
 
-    @Column(name = "ToEmail", nullable = false, length = 100)
+    @Column(name = "ToEmail", nullable = false, length = 1000)
     private String toEmail;
+
+    @Column(name = "CCEmail", length = 1000)
+    private String ccEmail;
+
+    @Column(name = "BCCEmail", length = 1000)
+    private String bccEmail;
 
     @Column(name = "Subject", length = 1000)
     private String subject;
 
-    @Column(name = "ContactID")
-    private String contactId;
-
     @Lob
-    @Column(name = "BodyContent")
     @Column(name = "BodyContent", columnDefinition = "TEXT")
     private String bodyContent;
 
-    @Temporal(TemporalType.TIMESTAMP)
+    @Column(name = "IsSent")
+    private Boolean isSent;
+
     @Column(name = "CreatedDate")
     private LocalDateTime createdDate;
+
+    @Column(name = "UpdatedDate")
+    private LocalDateTime updatedDate;
+
+    @Column(name = "Remarks", length = 500)
+    private String remarks;
+
+    @Column(name = "ContactID", length = 50)
+    private String contactId;
 
     @Column(name = "AgentID", length = 50)
     private String agentId;
@@ -44,12 +57,10 @@ public class MakerTransferStatus {
     @Column(name = "Comment", length = 255)
     private String comment;
 
-    @Column(name = "ActionID")
+    @Column(name = "ActionID", nullable = false)
     private Long actionId;
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "AnsweredDateTime")
-    private Date answeredDateTime;
     private LocalDateTime answeredDateTime;
 
     @Column(name = "SKILLSET")
