@@ -28,26 +28,26 @@ public class ContactAction {
     @Column(name = "contact_id", insertable = false, updatable = false)
     private Long contactId;
 
-    @Lob
+    // @Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String subject;
 
-    @Lob
+    // @Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String textContent;
 
-    @Lob
+    // @Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String textHtml;
 
     @Column(name = "callback_status", length = 100)
     private String callbackStatus;  // Unspecified, Contact_Transferred, etc.
 
-    @Lob
+    // @Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String source;  // EMail_from_Customer, Transfer_to_Skillset, etc.
 
-    @Lob
+    // @Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String comment;
 
@@ -82,15 +82,15 @@ public class ContactAction {
     private Long creationTime;  // milliseconds
 
     @Column(name = "mail_to", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    // @Lob
     private String mailTo;
 
     @Column(name = "mail_from", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    // @Lob
     private String mailFrom;
 
     @Column(name = "mail_cc", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    // @Lob
     private String mailCc;
 
     @OneToMany(mappedBy = "contactAction", cascade = CascadeType.ALL, orphanRemoval = true)

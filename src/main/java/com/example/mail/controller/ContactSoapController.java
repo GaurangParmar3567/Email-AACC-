@@ -5,8 +5,11 @@ import com.example.mail.dto.soapContact.*;
 import com.example.mail.dto.soapnew.*;
 import com.example.mail.model.Attachment;
 import com.example.mail.model.ContactAction;
+import com.example.mail.model.ClosedReason;
 import com.example.mail.model.Email;
 import com.example.mail.model.UserMaster;
+import com.example.mail.repository.ClosedReasonRepository;
+import com.example.mail.repository.ContactActionRepository;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.UserMasterRepo;
 import com.example.mail.service.MakerTransferStatusService;
@@ -21,6 +24,7 @@ import javax.xml.bind.*;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -33,21 +37,42 @@ public class ContactSoapController {
     private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
     private final EmailRepository emailRepository;
     private final UserMasterRepo userMasterRepository;
+    private final ContactActionRepository contactActionRepository;
+    private final ClosedReasonRepository closedReasonRepository;
     private final MakerTransferStatusService makerTransferStatusService;
     private static final JAXBContext RESPONSE_CONTEXT;
 
     static {
         try {
-            RESPONSE_CONTEXT = JAXBContext.newInstance(SoapResponseEnvelope.class, SoapContactResponseEnvelope.class);
+            RESPONSE_CONTEXT = JAXBContext.newInstance(
+                    SoapResponseEnvelope.class,
+                    SoapContactResponseEnvelope.class,
+                    GetAllClosedReasonCodesResponse.class,
+                    GetAllClosedReasonCodesResult.class,
+                    AWClosedReasonCode.class,
+                    SoapHistoryResponseEnvelope.class,
+                    SoapHistoryResponseBody.class,
+                    GetHistoryFromAACCResponse.class,
+                    GetHistoryFromAACCResult.class,
+                    MailHistory.class
+                        ,
+                        CloseContactResponse.class,
+                        CloseContactResult.class,
+                        CloseContactRequest.class
+            );
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize JAXB context", e);
         }
     }
 
     public ContactSoapController(EmailRepository emailRepository, UserMasterRepo userMasterRepository,
+                                 ContactActionRepository contactActionRepository,
+                                 ClosedReasonRepository closedReasonRepository,
                                  MakerTransferStatusService makerTransferStatusService) {
         this.emailRepository = emailRepository;
         this.userMasterRepository = userMasterRepository;
+        this.contactActionRepository = contactActionRepository;
+        this.closedReasonRepository = closedReasonRepository;
         this.makerTransferStatusService = makerTransferStatusService;
     }
 
@@ -221,6 +246,208 @@ public class ContactSoapController {
         }
     }
 
+    @PostMapping(value = "/GetAllClosedReasonCodes")
+    public ResponseEntity<String> getAllClosedReasonCodes(@RequestBody String rawXmlRequestBody) {
+        try {
+            JAXBContext requestContext = JAXBContext.newInstance(SoapRequestEnvelope.class);
+            Unmarshaller unmarshaller = requestContext.createUnmarshaller();
+            SoapRequestEnvelope requestEnvelope = (SoapRequestEnvelope) unmarshaller.unmarshal(new StringReader(rawXmlRequestBody));
+
+            if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getGetAllClosedReasonCodes() == null) {
+                logger.warn("Incoming SOAP request is missing the GetAllClosedReasonCodes payload.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("<error>Invalid SOAP request: missing GetAllClosedReasonCodes element</error>");
+            }
+
+            String sessionKey = requestEnvelope.getBody().getGetAllClosedReasonCodes().getSessionKey();
+            logger.info("Received GetAllClosedReasonCodes SOAP request. sessionKey={}", sessionKey);
+
+            List<ClosedReason> closedReasons = closedReasonRepository.findAll();
+            GetAllClosedReasonCodesResponse response = new GetAllClosedReasonCodesResponse();
+            GetAllClosedReasonCodesResult result = new GetAllClosedReasonCodesResult();
+
+            for (ClosedReason closedReason : closedReasons) {
+                if (closedReason == null) {
+                    continue;
+                }
+                AWClosedReasonCode code = new AWClosedReasonCode();
+                code.setName(closedReason.getName());
+                code.setNumericValue(closedReason.getOldCodeMappingID());
+                result.getAwClosedReasonCodes().add(code);
+            }
+
+            response.setGetAllClosedReasonCodesResult(result);
+            SoapResponseEnvelope responseEnvelope = new SoapResponseEnvelope();
+            SoapResponseBody body = new SoapResponseBody();
+            body.setGetAllClosedReasonCodesResponse(response);
+            responseEnvelope.setBody(body);
+
+            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+            try {
+                marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            } catch (PropertyException e) {
+                marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            }
+
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(responseEnvelope, writer);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_XML)
+                    .body(writer.toString());
+        } catch (Exception e) {
+            logger.error("Critical Failure while processing GetAllClosedReasonCodes SOAP action: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
+        }
+    }
+
+    @PostMapping(value = "/GetHistoryFromAACC")
+    public ResponseEntity<String> getHistoryFromAACC(@RequestBody String rawXmlRequestBody) {
+        try {
+            JAXBContext requestContext = JAXBContext.newInstance(SoapHistoryRequestEnvelope.class);
+            Unmarshaller unmarshaller = requestContext.createUnmarshaller();
+            SoapHistoryRequestEnvelope requestEnvelope = (SoapHistoryRequestEnvelope) unmarshaller.unmarshal(new StringReader(rawXmlRequestBody));
+
+            if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getGetHistoryFromAACC() == null) {
+                logger.warn("Incoming SOAP request is missing the GetHistoryFromAACC payload.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("<error>Invalid SOAP request: missing GetHistoryFromAACC element</error>");
+            }
+
+            GetHistoryFromAACCRequest request = requestEnvelope.getBody().getGetHistoryFromAACC();
+            String searchType = request.getSearchType();
+            String searchValue = request.getSearchValue();
+            logger.info("Received GetHistoryFromAACC SOAP request. searchType={}, searchValue={}", searchType, searchValue);
+
+            List<Email> emails = emailRepository.findAll();
+            if (searchType != null && searchValue != null) {
+                String upperType = searchType.toUpperCase();
+                String normalizedValue = searchValue.trim();
+
+                if ("STATUS".equals(upperType)) {
+                    if ("NEW".equalsIgnoreCase(normalizedValue)) {
+                        emails = filterEmails(emails, e -> "NEW".equalsIgnoreCase(e.getStatus()));
+                    } else {
+                        emails = filterEmails(emails, e -> e.getStatus() == null || !"NEW".equalsIgnoreCase(e.getStatus()));
+                    }
+                } else if ("TOEMAIL".equals(upperType)) {
+                    emails = filterEmails(emails, e -> containsIgnoreCase(e.getMailTo(), normalizedValue) || containsIgnoreCase(e.getMailFrom(), normalizedValue));
+                } else if ("SUBJECT".equals(upperType)) {
+                    emails = filterEmails(emails, e -> containsIgnoreCase(e.getOriginalSubject(), normalizedValue));
+                } else if ("AGENTID".equals(upperType)) {
+                    String[] parts = normalizedValue.split("\\|");
+                    if (parts.length > 0) {
+                        try {
+                            Long agentId = Long.parseLong(parts[0]);
+                            emails = filterEmails(emails, e -> e.getAgentId() != null && e.getAgentId().equals(agentId));
+                        } catch (NumberFormatException ignored) {
+                            emails = Collections.emptyList();
+                        }
+                    }
+                } else if ("ID".equals(upperType)) {
+                    try {
+                        Long idValue = Long.parseLong(normalizedValue);
+                        emails = filterEmails(emails, e -> e.getId() != null && e.getId().equals(idValue));
+                    } catch (NumberFormatException ignored) {
+                        emails = Collections.emptyList();
+                    }
+                } else if ("GTID".equals(upperType)) {
+                    try {
+                        Long idValue = Long.parseLong(normalizedValue);
+                        Email baseEmail = emailRepository.findById(idValue).orElse(null);
+                        if (baseEmail != null && baseEmail.getCustomerId() != null) {
+                            Long customerId = baseEmail.getCustomerId();
+                            emails = filterEmails(emails, e -> e.getId() != null && e.getCustomerId() != null && e.getId() >= idValue && e.getCustomerId().equals(customerId));
+                        } else {
+                            emails = Collections.emptyList();
+                        }
+                    } catch (NumberFormatException ignored) {
+                        emails = Collections.emptyList();
+                    }
+                } else if ("LTID".equals(upperType)) {
+                    try {
+                        Long idValue = Long.parseLong(normalizedValue);
+                        Email baseEmail = emailRepository.findById(idValue).orElse(null);
+                        if (baseEmail != null && baseEmail.getCustomerId() != null) {
+                            Long customerId = baseEmail.getCustomerId();
+                            emails = filterEmails(emails, e -> e.getId() != null && e.getCustomerId() != null && e.getId() <= idValue && e.getCustomerId().equals(customerId));
+                        } else {
+                            emails = Collections.emptyList();
+                        }
+                    } catch (NumberFormatException ignored) {
+                        emails = Collections.emptyList();
+                    }
+                } else {
+                    emails = filterEmails(emails, e -> containsIgnoreCase(e.getMailFrom(), normalizedValue));
+                }
+            }
+
+            GetHistoryFromAACCResponse response = new GetHistoryFromAACCResponse();
+            GetHistoryFromAACCResult result = new GetHistoryFromAACCResult();
+
+            for (Email email : emails) {
+                MailHistory history = new MailHistory();
+                history.setContactId(email.getContactId() == null ? "" : email.getContactId().toString());
+                history.setCreatedTime(email.getReceivedDate() == null ? "" : email.getReceivedDate().toString());
+                history.setSubject(email.getSubject());
+                history.setMailFrom(email.getMailFrom());
+                history.setMailTo(email.getMailTo());
+                history.setMailCC(email.getMailCc());
+                history.setSkillSet(email.getSkillsetName());
+                history.setClosedReason(email.getStatus());
+                history.setStatus(email.getStatus());
+                history.setMessage("Valid Input");
+                result.getMailHistory().add(history);
+            }
+
+            response.setGetHistoryFromAACCResult(result);
+            SoapHistoryResponseEnvelope responseEnvelope = new SoapHistoryResponseEnvelope();
+            SoapHistoryResponseBody body = new SoapHistoryResponseBody();
+            body.setGetHistoryFromAACCResponse(response);
+            responseEnvelope.setBody(body);
+
+            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+            try {
+                marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            } catch (PropertyException e) {
+                marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            }
+
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(responseEnvelope, writer);
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_XML)
+                    .body(writer.toString());
+        } catch (Exception e) {
+            logger.error("Critical Failure while processing GetHistoryFromAACC SOAP action: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
+        }
+    }
+
+    private boolean containsIgnoreCase(String source, String search) {
+        return source != null && search != null && source.toLowerCase().contains(search.toLowerCase());
+    }
+
+    private List<Email> filterEmails(List<Email> emails, java.util.function.Predicate<Email> predicate) {
+        if (emails == null || emails.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<Email> result = new java.util.ArrayList<>();
+        for (Email email : emails) {
+            if (predicate.test(email)) {
+                result.add(email);
+            }
+        }
+        return result;
+    }
+
     @PostMapping(value = "/getContact")
     public ResponseEntity<String> getContact(@RequestBody String rawXmlRequestBody) throws JAXBException {
         try {
@@ -294,4 +521,105 @@ public class ContactSoapController {
                     .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
         }
     }
+
+    @PostMapping(value = "/CloseContact")
+    public ResponseEntity<String> closeContact(@RequestBody String rawXmlRequestBody) {
+        try {
+            JAXBContext requestContext = JAXBContext.newInstance(SoapRequestEnvelope.class);
+            Unmarshaller unmarshaller = requestContext.createUnmarshaller();
+            SoapRequestEnvelope requestEnvelope = (SoapRequestEnvelope) unmarshaller.unmarshal(new StringReader(rawXmlRequestBody));
+
+            if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getCloseContact() == null) {
+                logger.warn("Incoming SOAP request is missing the CloseContact payload.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("<error>Invalid SOAP request: missing CloseContact element</error>");
+            }
+
+            CloseContactRequest request = requestEnvelope.getBody().getCloseContact();
+            String idStr = request.getId();
+            String closureText = request.getClosureText();
+            Long closedReasonCodeValue = request.getClosedReasonCodeValue();
+            Boolean closedReasonCodeSpecified = request.getClosedReasonCodeSpecified();
+            String sessionKey = request.getSessionKey();
+
+            long contactId = 0L;
+            try {
+                contactId = Long.parseUnsignedLong(idStr);
+            } catch (Exception ex) {
+                logger.error("Invalid contact id format: {}", idStr);
+                CloseContactResponse response = new CloseContactResponse();
+                CloseContactResult result = new CloseContactResult(0L);
+                response.setCloseContactResult(result);
+                SoapResponseEnvelope responseEnvelope = new SoapResponseEnvelope();
+                SoapResponseBody body = new SoapResponseBody();
+                body.setCloseContactResponse(response);
+                responseEnvelope.setBody(body);
+
+                Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+                marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+                marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+                try {
+                    marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
+                } catch (PropertyException e) {
+                    marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new MyNamespacePrefixMapper());
+                }
+
+                StringWriter writer = new StringWriter();
+                marshaller.marshal(responseEnvelope, writer);
+
+                return ResponseEntity.badRequest().contentType(MediaType.TEXT_XML).body(writer.toString());
+            }
+
+            // create action
+            ContactAction action = new ContactAction();
+            action.setActionId(System.currentTimeMillis() % 10000000L + 1000000L);
+            action.setContactId(contactId);
+            action.setSubject("CloseContact");
+            action.setTextContent(closureText);
+            action.setTextHtml(closureText);
+            action.setSource("CloseContact");
+            action.setComment(closureText);
+            action.setCreationTime(System.currentTimeMillis());
+            if (closedReasonCodeSpecified != null && closedReasonCodeSpecified && closedReasonCodeValue != null) {
+                action.setClosedReasonNumericValue(closedReasonCodeValue.intValue());
+            }
+            contactActionRepository.save(action);
+
+            // update emails with this contactId -> set status Closed
+            List<Email> emails = emailRepository.findByContactId(contactId);
+            for (Email email : emails) {
+                email.setStatus("Closed");
+                emailRepository.save(email);
+            }
+
+            long returned = action.getActionId();
+
+            CloseContactResponse response = new CloseContactResponse();
+            CloseContactResult result = new CloseContactResult(returned);
+            response.setCloseContactResult(result);
+            SoapResponseEnvelope responseEnvelope = new SoapResponseEnvelope();
+            SoapResponseBody body = new SoapResponseBody();
+            body.setCloseContactResponse(response);
+            responseEnvelope.setBody(body);
+
+            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+            try {
+                marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            } catch (PropertyException e) {
+                marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new MyNamespacePrefixMapper());
+            }
+
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(responseEnvelope, writer);
+
+            return ResponseEntity.ok().contentType(MediaType.TEXT_XML).body(writer.toString());
+        } catch (Exception e) {
+            logger.error("Critical Failure while processing CloseContact SOAP action: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
+        }
+    }
+
 }

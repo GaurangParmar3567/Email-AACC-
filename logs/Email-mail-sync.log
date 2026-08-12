@@ -1,0 +1,11 @@
+26-08-12 23:50:06.380 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
+26-08-12 23:50:07.890 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
+26-08-12 23:50:07.890 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Syncing emails for account: gunnitttt@gmail.com
+26-08-12 23:50:07.916 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Attempting standard authentication connection for user: gunnitttt@gmail.com
+26-08-12 23:50:09.476 [scheduling-1] INFO  MAIL_SYNC_LOGGER - Successfully established connection to corporate mail store.
+26-08-12 23:50:10.107 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Folder 'INBOX' opened. Total messages: 2
+26-08-12 23:50:10.460 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] Processing new email. ID: <6a7b6688ab9b8_14b61f813731@749b51f6501e.mail> | Subject: ZACH B CPM + MAX PAYOUT INCREASE (INSTAGRAM)
+26-08-12 23:50:11.020 [scheduling-1] INFO  MAIL_SYNC_LOGGER - [New Thread] No parent found. Generated new Contact ID: 9811020
+26-08-12 23:50:11.326 [scheduling-1] DEBUG MAIL_SYNC_LOGGER - Parsing part with Content-Type: TEXT/HTML; charset=utf-8
+26-08-12 23:50:12.764 [scheduling-1] ERROR MAIL_SYNC_LOGGER - [gunnitttt@gmail.com] CRITICAL: Failed to sync folder 'INBOX'. Reason: null
+26-08-12 23:50:13.515 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================

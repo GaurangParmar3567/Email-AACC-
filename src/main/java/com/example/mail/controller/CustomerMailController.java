@@ -5,6 +5,7 @@ import com.example.mail.dto.response.MakerMailActionDTO;
 import com.example.mail.exception.ContactNotFoundException;
 import com.example.mail.model.MakerTransferStatus;
 import com.example.mail.repository.ContactActionRepository;
+import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.MakerTransferStatusRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,12 +32,15 @@ public class CustomerMailController {
             "http://10.48.12.94/IResolveAdmin/Editor/editor/filemanager/connectors/aspx/userfiles/signature1(2).jpg";
 
     private final MakerTransferStatusRepository makerTransferStatusRepository;
+    private final EmailRepository emailRepository;
     private final ContactActionRepository contactActionRepository;
     private final Logger logger = LoggerFactory.getLogger("Customer_Mail_LOGGER");
 
     public CustomerMailController(MakerTransferStatusRepository makerTransferStatusRepository,
+                                  EmailRepository emailRepository,
                                   ContactActionRepository contactActionRepository) {
         this.makerTransferStatusRepository = makerTransferStatusRepository;
+        this.emailRepository = emailRepository;
         this.contactActionRepository = contactActionRepository;
     }
 
@@ -87,21 +91,34 @@ public class CustomerMailController {
     @GetMapping("/maker")
     public CustomerMailForReplyDTO getCustomerMailforMaker(
             @RequestParam("ContactID") String contactId) {
-
         logger.info("Maker mail requested for ContactID {}", contactId);
         try {
-            java.util.List<MakerMailActionDTO> actions = contactActionRepository
-                    .findMakerMailFieldsByContactId(toContactId(contactId));
-            if (actions.isEmpty()) {
-                logger.warn("No maker action found for ContactID {}", contactId);
+            java.util.List<com.example.mail.model.Email> emails = emailRepository
+                    .findByContactId(toContactId(contactId));
+            if (emails.isEmpty()) {
+                logger.warn("No maker email found for ContactID {}", contactId);
                 throw new ContactNotFoundException(contactId);
             }
-            MakerMailActionDTO action = actions.get(0);
-            logger.debug("Maker action found for ContactID {}; {} matching action(s)", contactId, actions.size());
+            com.example.mail.model.Email email = emails.get(0);
+            MakerMailActionDTO action = new MakerMailActionDTO(
+                    email.getReceivedDate() == null ? null : email.getReceivedDate().getTime(),
+                    email.getMailFrom(),
+                    email.getMailTo(),
+                    email.getMailCc(),
+                    email.getSubject(),
+                    email.getBodyHtml(),
+                    email.getText());
+            logger.debug("Maker email found for ContactID {}; {} matching email(s)", contactId, emails.size());
+
+            String replyText = action.getTextHtml() != null ? action.getTextHtml() : action.getText();
+            if (replyText != null) {
+                replyText = replyText.replace(LEGACY_SIGNATURE_URL, CURRENT_SIGNATURE_URL);
+            }
 
             CustomerMailForReplyDTO reply = new CustomerMailForReplyDTO();
             reply.setMessage("Valid ContactID");
-            reply.setReplyText(buildMakerReplyText(action));
+            // reply.setReplyText(buildMakerReplyText(action));
+            reply.setReplyText(replyText);
             logger.info("Maker mail response prepared for ContactID {}", contactId);
             return reply;
         } catch (ContactNotFoundException exception) {

@@ -27,11 +27,11 @@ public class MakerTransferStatus {
     private String contactId;
 
     @Lob
-    @Column(name = "BodyContent")
+    // @Column(name = "BodyContent")
     @Column(name = "BodyContent", columnDefinition = "TEXT")
     private String bodyContent;
 
-    @Temporal(TemporalType.TIMESTAMP)
+    // @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CreatedDate")
     private LocalDateTime createdDate;
 
@@ -47,9 +47,9 @@ public class MakerTransferStatus {
     @Column(name = "ActionID")
     private Long actionId;
 
-    @Temporal(TemporalType.TIMESTAMP)
+    // @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "AnsweredDateTime")
-    private Date answeredDateTime;
+    // private Date answeredDateTime;
     private LocalDateTime answeredDateTime;
 
     @Column(name = "SKILLSET")

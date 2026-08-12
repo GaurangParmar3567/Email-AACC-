@@ -1,0 +1,17 @@
+26-08-12 23:50:29.422 [http-nio-8081-exec-1] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received GetHistoryFromAACC SOAP request. searchType=null, searchValue=null
+26-08-12 23:50:33.691 [http-nio-8081-exec-3] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received GetAllClosedReasonCodes SOAP request. sessionKey=string
+26-08-12 23:50:38.778 [http-nio-8081-exec-4] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received ReadContact SOAP request for Contact ID: 4431199
+26-08-12 23:50:59.685 [http-nio-8081-exec-7] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SOAP request to get Contact ID for agentID: 39000001
+26-08-12 23:50:59.701 [http-nio-8081-exec-7] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Found 2 pending emails for skill ID: 17
+26-08-12 23:50:59.764 [http-nio-8081-exec-7] DEBUG MAIL_SERVICES_AVAAYA_LOGGER - Generated SOAP response for Agent ID 39000001: <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ns4:Envelope xmlns:ns6="http://tempuri.org/" xmlns:ns5="http://nortel.com/CCMMAgentWebservices/" xmlns:ns2="http://www.w3.org/2001/XMLSchema" xmlns:ns4="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns3="http://www.w3.org/2001/XMLSchema-instance">
+    <ns4:Body>
+        <ns6:GetContactResponse>
+            <GetContactResult>
+                <ContactID>3669210</ContactID>
+                <Message>Valid Input</Message>
+            </GetContactResult>
+        </ns6:GetContactResponse>
+    </ns4:Body>
+</ns4:Envelope>
+

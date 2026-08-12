@@ -1,0 +1,32 @@
+26-08-12 23:50:01.440 [main] INFO  com.example.mail.MailApplication - Starting MailApplication using Java 1.8.0_492 on Gaurang-Parmar with PID 18652 (C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-\target\classes started by AMD in C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-)
+26-08-12 23:50:01.450 [main] INFO  com.example.mail.MailApplication - The following 1 profile is active: "dev"
+26-08-12 23:50:02.279 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+26-08-12 23:50:02.386 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 93 ms. Found 10 JPA repository interfaces.
+26-08-12 23:50:03.249 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8081 (http)
+26-08-12 23:50:03.258 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+26-08-12 23:50:03.261 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+26-08-12 23:50:03.261 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.83]
+26-08-12 23:50:03.366 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+26-08-12 23:50:03.366 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1877 ms
+26-08-12 23:50:03.641 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+26-08-12 23:50:03.711 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 5.6.15.Final
+26-08-12 23:50:03.893 [main] INFO  o.h.annotations.common.Version - HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+26-08-12 23:50:04.009 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+26-08-12 23:50:04.253 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+26-08-12 23:50:04.276 [main] INFO  org.hibernate.dialect.Dialect - HHH000400: Using dialect: org.hibernate.dialect.SQLServerDialect
+26-08-12 23:50:05.639 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+26-08-12 23:50:05.656 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+26-08-12 23:50:07.055 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+26-08-12 23:50:07.505 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8081"]
+26-08-12 23:50:07.529 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8081 (http) with context path ''
+26-08-12 23:50:07.893 [main] INFO  com.example.mail.MailApplication - Started MailApplication in 6.861 seconds (JVM running for 7.507)
+26-08-12 23:50:29.354 [http-nio-8081-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+26-08-12 23:50:29.354 [http-nio-8081-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+26-08-12 23:50:29.356 [http-nio-8081-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+26-08-12 23:50:46.594 [http-nio-8081-exec-5] INFO  Customer_Mail_LOGGER - Maker mail requested for ContactID 4431199
+26-08-12 23:50:46.598 [http-nio-8081-exec-5] INFO  Customer_Mail_LOGGER - Maker mail response prepared for ContactID 4431199
+26-08-12 23:51:07.885 [http-nio-8081-exec-8] INFO  Customer_Mail_LOGGER - Maker mail requested for ContactID 4
+26-08-12 23:51:07.888 [http-nio-8081-exec-8] WARN  Customer_Mail_LOGGER - No maker email found for ContactID 4
+26-08-12 23:51:11.458 [http-nio-8081-exec-9] WARN  o.s.w.s.m.s.DefaultHandlerExceptionResolver - Resolved [org.springframework.web.HttpRequestMethodNotSupportedException: Request method 'POST' not supported]
+26-08-12 23:51:18.336 [http-nio-8081-exec-10] INFO  Customer_Mail_LOGGER - Maker mail requested for ContactID 1
+26-08-12 23:51:18.338 [http-nio-8081-exec-10] WARN  Customer_Mail_LOGGER - No maker email found for ContactID 1

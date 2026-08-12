@@ -30,32 +30,32 @@ public class Email {
     private String sender;
 
 //    @Column(length = 500)
-    @Lob
+    //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String recipient;
 
 //    @Column(length = 1000)
-    @Lob
+    //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String cc;
 
     @Column(columnDefinition = "NVARCHAR(MAX)")
 //    @Column(length = 1000)
-    @Lob
+    //@Lob
     private String bcc;
 
     @Column(length = 1000)
     private String subject;
 
-    @Lob
+    //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String body;
 
-    @Lob
+    //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String text;
 
-    @Lob
+    //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String bodyHtml;
 
@@ -81,7 +81,7 @@ public class Email {
     private Long customerId;
 
     @Column(name = "original_subject", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    //@Lob
     private String originalSubject;
 
     @Column(length = 100)
@@ -123,15 +123,15 @@ public class Email {
     private String agentLastName;
 
     @Column(name = "mail_to", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    //@Lob
     private String mailTo;
 
     @Column(name = "mail_from", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    //@Lob
     private String mailFrom;
 
     @Column(name = "mail_cc", columnDefinition = "NVARCHAR(MAX)")
-    @Lob
+    //@Lob
     private String mailCc;
 
     // --- Relations ---
@@ -141,7 +141,7 @@ public class Email {
     @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ContactAction> contactActions = new ArrayList<>();
 
-    @Lob
+    //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
     private String referencesHeader;
 

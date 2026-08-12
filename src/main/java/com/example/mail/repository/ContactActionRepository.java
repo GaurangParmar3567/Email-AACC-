@@ -18,4 +18,9 @@ public interface ContactActionRepository extends JpaRepository<ContactAction, Lo
             + "FROM ContactAction ca WHERE ca.contactId = :contactId ORDER BY ca.id ASC")
     List<MakerMailActionDTO> findMakerMailFieldsByContactId(@Param("contactId") Long contactId);
 
+    @Query("SELECT DISTINCT ca.closedReasonName, ca.closedReasonNumericValue "
+            + "FROM ContactAction ca "
+            + "WHERE ca.closedReasonName IS NOT NULL AND ca.closedReasonNumericValue IS NOT NULL")
+    List<Object[]> findDistinctClosedReasonCodes();
+
 }
