@@ -1,11 +1,14 @@
 package com.example.mail.controller;
 
-import com.example.mail.dto.MyNamespacePrefixMapper;
-import com.example.mail.dto.sendToChecker.SendToCheckerResult;
-import com.example.mail.dto.sendToChecker.SoapSendToCheckerRequestEnvelope;
-import com.example.mail.dto.sendToChecker.SoapSendToCheckerResponseEnvelope;
-import com.example.mail.dto.soapContact.*;
-import com.example.mail.dto.soapnew.*;
+import com.example.mail.util.xml.MyNamespacePrefixMapper;
+import com.example.mail.util.xml.CustomerMailNamespacePrefixMapper;
+import com.example.mail.dto.response.CustomerMailForReplyDTO;
+import com.example.mail.dto.soap.checker.SendToCheckerResult;
+import com.example.mail.dto.soap.checker.SoapSendToCheckerRequestEnvelope;
+import com.example.mail.dto.soap.checker.SoapSendToCheckerResponseEnvelope;
+import com.example.mail.dto.soap.aacc.*;
+import com.example.mail.dto.soap.common.*;
+import com.example.mail.exception.ContactNotFoundException;
 import com.example.mail.model.Attachment;
 import com.example.mail.model.ContactAction;
 import com.example.mail.model.ClosedReason;
@@ -16,6 +19,7 @@ import com.example.mail.repository.ContactActionRepository;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.SkillMasterRepo;
 import com.example.mail.repository.UserMasterRepo;
+import com.example.mail.service.CustomerMailService;
 import com.example.mail.service.MakerTransferStatusService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.xml.bind.*;
+import com.sun.xml.bind.marshaller.CharacterEscapeHandler;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.time.LocalDateTime;
@@ -45,6 +50,7 @@ public class ContactSoapController {
     private final ContactActionRepository contactActionRepository;
     private final ClosedReasonRepository closedReasonRepository;
     private final MakerTransferStatusService makerTransferStatusService;
+    private final CustomerMailService customerMailService;
     private static final JAXBContext RESPONSE_CONTEXT;
 
     static {
@@ -67,7 +73,14 @@ public class ContactSoapController {
                         SoapSendToCheckerResponseEnvelope.class,
                         SendToCheckerResult.class,
                         TransferContactToSkillsetRequestEnvelope.class,
-                        TransferContactToSkillsetResponseEnvelope.class
+                            TransferContactToSkillsetResponseEnvelope.class,
+                            SoapCustomerMailRequestEnvelope.class,
+                            SoapCustomerMailResponseEnvelope.class,
+                            CustomerMailRequest.class,
+                            CustomerMailResponseBody.class,
+                            MakerCustomerMailResponse.class,
+                            CheckerCustomerMailResponse.class,
+                            CustomerMailResult.class
             );
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize JAXB context", e);
@@ -78,13 +91,15 @@ public class ContactSoapController {
                                  ContactActionRepository contactActionRepository,
                                  ClosedReasonRepository closedReasonRepository,
                                  MakerTransferStatusService makerTransferStatusService,
-                                 SkillMasterRepo skillMasterRepository) {
+                                 SkillMasterRepo skillMasterRepository,
+                                 CustomerMailService customerMailService) {
         this.emailRepository = emailRepository;
         this.userMasterRepository = userMasterRepository;
         this.contactActionRepository = contactActionRepository;
         this.closedReasonRepository = closedReasonRepository;
         this.makerTransferStatusService = makerTransferStatusService;
         this.skillMasterRepository = skillMasterRepository;
+        this.customerMailService = customerMailService;
     }
 
     @PostMapping(value = "/getContactAACC")
@@ -230,7 +245,7 @@ public class ContactSoapController {
             body.setReadContactResponse(readContactResponse);
             responseEnvelope.setBody(body);
 
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
@@ -278,7 +293,7 @@ public class ContactSoapController {
 
             SoapSendToCheckerResponseEnvelope responseEnvelope = new SoapSendToCheckerResponseEnvelope();
             responseEnvelope.getBody().setSendToCheckerResponse(result);
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
             StringWriter writer = new StringWriter();
@@ -338,7 +353,7 @@ public class ContactSoapController {
             TransferContactToSkillsetResponseEnvelope responseEnvelope = new TransferContactToSkillsetResponseEnvelope();
             responseEnvelope.getBody().setTransferContactToSkillsetResponse(
                     new TransferContactToSkillsetResult(contactId));
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
             StringWriter writer = new StringWriter();
@@ -365,6 +380,141 @@ public class ContactSoapController {
                         + "<soap:Fault><faultcode>soap:Client</faultcode><faultstring>"
                         + escapeXml(safeMessage)
                         + "</faultstring></soap:Fault></soap:Body></soap:Envelope>");
+    }
+
+    private Marshaller createResponseMarshaller(Object responseEnvelope) throws JAXBException {
+        Marshaller marshaller = JAXBContext.newInstance(responseEnvelope.getClass()).createMarshaller();
+        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+        marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+        try {
+            marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new MyNamespacePrefixMapper());
+        } catch (PropertyException exception) {
+            marshaller.setProperty("org.glassfish.jaxb.namespacePrefixMapper", new MyNamespacePrefixMapper());
+        }
+        return marshaller;
+    }
+
+            @PostMapping(value = "/getCustomerMail")
+            public ResponseEntity<String> getCustomerMail(@RequestBody String rawXmlRequestBody) {
+                try {
+                    SoapCustomerMailRequestEnvelope requestEnvelope = (SoapCustomerMailRequestEnvelope)
+                            JAXBContext.newInstance(SoapCustomerMailRequestEnvelope.class)
+                                    .createUnmarshaller()
+                                    .unmarshal(new StringReader(rawXmlRequestBody));
+
+                    if (requestEnvelope.getBody() == null) {
+                        return soapFault(HttpStatus.BAD_REQUEST, "SOAP Body is required");
+                    }
+
+                    CustomerMailRequest request;
+                    boolean makerOperation;
+                    if (requestEnvelope.getBody().getGetCustomerMailforMaker() != null) {
+                        request = requestEnvelope.getBody().getGetCustomerMailforMaker();
+                        makerOperation = true;
+                    } else if (requestEnvelope.getBody().getGetCustomerMailforChecker() != null) {
+                        request = requestEnvelope.getBody().getGetCustomerMailforChecker();
+                        makerOperation = false;
+                    } else {
+                        return soapFault(HttpStatus.BAD_REQUEST,
+                                "GetCustomerMailforMaker or GetCustomerMailforChecker is required");
+                    }
+
+                    if (request.getContactId() == null || request.getContactId().trim().isEmpty()) {
+                        return soapFault(HttpStatus.BAD_REQUEST, "ContactID is required");
+                    }
+
+                    String operation = makerOperation ? "GetCustomerMailforMaker" : "GetCustomerMailforChecker";
+                    CustomerMailForReplyDTO mail = makerOperation
+                            ? customerMailService.getCustomerMailforMaker(request.getContactId().trim())
+                            : customerMailService.getCustomerMailforChecker(request.getContactId().trim());
+
+                    CustomerMailResult result = new CustomerMailResult();
+                    result.setMessage(mail.getMessage());
+                    result.setReplyText(asCdata(mail.getReplyText()));
+                    result.setClosedReason(mail.getClosedReason());
+                    result.setComment(mail.getComment());
+                    result.setGetError(mail.getGetError());
+
+                    SoapCustomerMailResponseEnvelope responseEnvelope = new SoapCustomerMailResponseEnvelope();
+                    CustomerMailResponseBody responseBody = new CustomerMailResponseBody();
+                    if (makerOperation) {
+                        MakerCustomerMailResponse operationResponse = new MakerCustomerMailResponse();
+                        operationResponse.setResult(result);
+                        responseBody.setGetCustomerMailforMakerResponse(operationResponse);
+                    } else {
+                        CheckerCustomerMailResponse operationResponse = new CheckerCustomerMailResponse();
+                        operationResponse.setResult(result);
+                        responseBody.setGetCustomerMailforCheckerResponse(operationResponse);
+                    }
+                    responseEnvelope.setBody(responseBody);
+
+                        Marshaller marshaller = JAXBContext.newInstance(
+                            SoapCustomerMailResponseEnvelope.class,
+                            CustomerMailResponseBody.class,
+                            MakerCustomerMailResponse.class,
+                            CheckerCustomerMailResponse.class,
+                            CustomerMailResult.class).createMarshaller();
+                    marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+                    marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+                        marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper",
+                            new CustomerMailNamespacePrefixMapper());
+                    marshaller.setProperty("com.sun.xml.bind.marshaller.CharacterEscapeHandler",
+                            (CharacterEscapeHandler) (characters, start, length, isAttVal, writer) -> {
+                                String value = new String(characters, start, length);
+                                if (value.startsWith("<![CDATA[") && value.endsWith("]]>") && !isAttVal) {
+                                    writer.write(value);
+                                } else {
+                                    escapeXmlCharacters(characters, start, length, isAttVal, writer);
+                                }
+                            });
+                    StringWriter writer = new StringWriter();
+                    marshaller.marshal(responseEnvelope, writer);
+                    logger.debug("Generated SOAP response for {} and ContactID {}", operation, request.getContactId());
+
+                    return ResponseEntity.ok().contentType(MediaType.TEXT_XML).body(writer.toString());
+                } catch (JAXBException exception) {
+                    logger.error("Invalid GetCustomerMail SOAP request", exception);
+                    return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetCustomerMail SOAP request");
+                } catch (ContactNotFoundException exception) {
+                    logger.warn("Customer mail contact not found: {}", exception.getMessage());
+                    return soapFault(HttpStatus.NOT_FOUND, exception.getMessage());
+                } catch (Exception exception) {
+                    logger.error("Failure while processing GetCustomerMail SOAP request", exception);
+                    return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve customer mail");
+                }
+            }
+
+    private String asCdata(String value) {
+        if (value == null) {
+            return null;
+        }
+        return "<![CDATA[" + value.replace("]]>", "]]><![CDATA[>") + "]]>";
+    }
+
+    private void escapeXmlCharacters(char[] characters, int start, int length,
+                                     boolean isAttribute, java.io.Writer writer) throws java.io.IOException {
+        for (int index = start; index < start + length; index++) {
+            char character = characters[index];
+            switch (character) {
+                case '&':
+                    writer.write("&amp;");
+                    break;
+                case '<':
+                    writer.write("&lt;");
+                    break;
+                case '>':
+                    writer.write("&gt;");
+                    break;
+                case '"':
+                    writer.write(isAttribute ? "&quot;" : "\"");
+                    break;
+                case '\r':
+                    writer.write("&#xD;");
+                    break;
+                default:
+                    writer.write(character);
+            }
+        }
     }
 
     private String escapeXml(String value) {
@@ -408,7 +558,7 @@ public class ContactSoapController {
             body.setGetAllClosedReasonCodesResponse(response);
             responseEnvelope.setBody(body);
 
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
             try {
@@ -535,7 +685,7 @@ public class ContactSoapController {
             body.setGetHistoryFromAACCResponse(response);
             responseEnvelope.setBody(body);
 
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
             try {
@@ -619,7 +769,7 @@ public class ContactSoapController {
             body.setGetContactResponse(getContactResponse);
             responseEnvelope.setBody(body);
 
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
 
@@ -681,7 +831,7 @@ public class ContactSoapController {
                 body.setCloseContactResponse(response);
                 responseEnvelope.setBody(body);
 
-                Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+                Marshaller marshaller = createResponseMarshaller(responseEnvelope);
                 marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
                 marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
                 try {
@@ -728,7 +878,7 @@ public class ContactSoapController {
             body.setCloseContactResponse(response);
             responseEnvelope.setBody(body);
 
-            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            Marshaller marshaller = createResponseMarshaller(responseEnvelope);
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
             try {

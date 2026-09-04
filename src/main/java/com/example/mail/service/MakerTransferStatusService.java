@@ -1,6 +1,6 @@
 package com.example.mail.service;
 
-import com.example.mail.dto.sendMail.ObjMail;
+import com.example.mail.dto.soap.checker.ObjMail;
 import com.example.mail.model.MakerTransferStatus;
 import com.example.mail.repository.MakerTransferStatusRepository;
 import org.slf4j.Logger;

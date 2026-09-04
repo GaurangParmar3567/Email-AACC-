@@ -1,6 +1,6 @@
 package com.example.mail.service;
 
-import com.example.mail.config.EmailCleaner;
+import com.example.mail.util.EmailCleaner;
 import com.example.mail.config.MailProperties;
 import com.example.mail.model.*;
 import com.example.mail.repository.*;

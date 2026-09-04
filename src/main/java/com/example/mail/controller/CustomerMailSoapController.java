@@ -1,6 +1,8 @@
 package com.example.mail.controller;
 
 import com.example.mail.dto.response.CustomerMailForReplyDTO;
+import com.example.mail.service.CustomerMailService;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,10 +33,10 @@ public class CustomerMailSoapController {
 
     private static final String MAKER_OPERATION = "GetCustomerMailforMaker";
     private static final String CHECKER_OPERATION = "GetCustomerMailforChecker";
-    private final CustomerMailController customerMailController;
+    private final CustomerMailService customerMailService;
 
-    public CustomerMailSoapController(CustomerMailController customerMailController) {
-        this.customerMailController = customerMailController;
+    public CustomerMailSoapController(CustomerMailService customerMailService) {
+        this.customerMailService = customerMailService;
     }
 
     @PostMapping(consumes = MediaType.TEXT_XML_VALUE)
@@ -49,8 +51,8 @@ public class CustomerMailSoapController {
 
             String contactId = findRequiredElementText(requestXml, "ContactID");
             CustomerMailForReplyDTO result = MAKER_OPERATION.equals(requestOperation)
-                    ? customerMailController.getCustomerMailforMaker(contactId)
-                    : customerMailController.getCustomerMailforChecker(contactId);
+                    ? customerMailService.getCustomerMailforMaker(contactId)
+                    : customerMailService.getCustomerMailforChecker(contactId);
 
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_XML)

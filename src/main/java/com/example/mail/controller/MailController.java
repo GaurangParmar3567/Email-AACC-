@@ -3,7 +3,7 @@ package com.example.mail.controller;
 import com.example.mail.dto.request.EmailRequestAIDTO;
 import com.example.mail.dto.response.EmailThreadResponseDTO;
 import com.example.mail.model.Attachment;
-import com.example.mail.dto.EmailResponseDTO;
+import com.example.mail.dto.response.EmailResponseDTO;
 import com.example.mail.service.EmailDisplayService;
 import com.example.mail.service.MailSyncService;
 import org.slf4j.Logger;
