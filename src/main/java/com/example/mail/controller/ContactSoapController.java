@@ -14,6 +14,7 @@ import com.example.mail.model.UserMaster;
 import com.example.mail.repository.ClosedReasonRepository;
 import com.example.mail.repository.ContactActionRepository;
 import com.example.mail.repository.EmailRepository;
+import com.example.mail.repository.SkillMasterRepo;
 import com.example.mail.repository.UserMasterRepo;
 import com.example.mail.service.MakerTransferStatusService;
 import org.slf4j.Logger;
@@ -40,6 +41,7 @@ public class ContactSoapController {
     private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
     private final EmailRepository emailRepository;
     private final UserMasterRepo userMasterRepository;
+    private final SkillMasterRepo skillMasterRepository;
     private final ContactActionRepository contactActionRepository;
     private final ClosedReasonRepository closedReasonRepository;
     private final MakerTransferStatusService makerTransferStatusService;
@@ -63,7 +65,9 @@ public class ContactSoapController {
                         CloseContactResult.class,
                         CloseContactRequest.class,
                         SoapSendToCheckerResponseEnvelope.class,
-                        SendToCheckerResult.class
+                        SendToCheckerResult.class,
+                        TransferContactToSkillsetRequestEnvelope.class,
+                        TransferContactToSkillsetResponseEnvelope.class
             );
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize JAXB context", e);
@@ -73,12 +77,14 @@ public class ContactSoapController {
     public ContactSoapController(EmailRepository emailRepository, UserMasterRepo userMasterRepository,
                                  ContactActionRepository contactActionRepository,
                                  ClosedReasonRepository closedReasonRepository,
-                                 MakerTransferStatusService makerTransferStatusService) {
+                                 MakerTransferStatusService makerTransferStatusService,
+                                 SkillMasterRepo skillMasterRepository) {
         this.emailRepository = emailRepository;
         this.userMasterRepository = userMasterRepository;
         this.contactActionRepository = contactActionRepository;
         this.closedReasonRepository = closedReasonRepository;
         this.makerTransferStatusService = makerTransferStatusService;
+        this.skillMasterRepository = skillMasterRepository;
     }
 
     @PostMapping(value = "/getContactAACC")
@@ -289,6 +295,65 @@ public class ContactSoapController {
         } catch (Exception exception) {
             logger.error("Failure while processing SendToChecker SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to save maker transfer details");
+        }
+    }
+
+    @PostMapping(value = "/TransferContactToSkillset")
+    public ResponseEntity<String> transferContactToSkillset(@RequestBody String rawXmlRequestBody) {
+        try {
+            TransferContactToSkillsetRequestEnvelope requestEnvelope = (TransferContactToSkillsetRequestEnvelope)
+                    JAXBContext.newInstance(TransferContactToSkillsetRequestEnvelope.class)
+                            .createUnmarshaller().unmarshal(new StringReader(rawXmlRequestBody));
+
+            if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getTransferContactToSkillset() == null) {
+                return soapFault(HttpStatus.BAD_REQUEST,
+                        "Invalid SOAP request: missing TransferContactToSkillset payload");
+            }
+
+            TransferContactToSkillsetRequest request = requestEnvelope.getBody().getTransferContactToSkillset();
+            if (request.getId() == null || request.getId().trim().isEmpty() || request.getSkillsetId() == null) {
+                return soapFault(HttpStatus.BAD_REQUEST, "id and skillsetId are required");
+            }
+
+            long contactId = Long.parseLong(request.getId().trim());
+            long skillsetId = request.getSkillsetId();
+            logger.info("Received TransferContactToSkillset request for ContactID {} and SkillsetID {}",
+                    contactId, skillsetId);
+
+            List<Email> emails = emailRepository.findByContactId(contactId);
+            if (emails == null || emails.isEmpty()) {
+                return soapFault(HttpStatus.NOT_FOUND, "No emails found for ContactID " + contactId);
+            }
+
+            String skillsetName = skillMasterRepository.findById(skillsetId)
+                    .orElseThrow(() -> new IllegalArgumentException("Skillset not found for ID " + skillsetId))
+                    .getName();
+            for (Email email : emails) {
+                email.setSkillsetId(skillsetId);
+                email.setSkillsetName(skillsetName);
+                email.setAssigned(false);
+            }
+            emailRepository.saveAll(emails);
+
+            TransferContactToSkillsetResponseEnvelope responseEnvelope = new TransferContactToSkillsetResponseEnvelope();
+            responseEnvelope.getBody().setTransferContactToSkillsetResponse(
+                    new TransferContactToSkillsetResult(contactId));
+            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(responseEnvelope, writer);
+            return ResponseEntity.ok().contentType(MediaType.TEXT_XML).body(writer.toString());
+        } catch (JAXBException exception) {
+            logger.error("Invalid TransferContactToSkillset SOAP request", exception);
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid TransferContactToSkillset SOAP request");
+        } catch (NumberFormatException exception) {
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid contact id format");
+        } catch (IllegalArgumentException exception) {
+            return soapFault(HttpStatus.BAD_REQUEST, exception.getMessage());
+        } catch (Exception exception) {
+            logger.error("Failure while processing TransferContactToSkillset SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to transfer contact to skillset");
         }
     }
 
