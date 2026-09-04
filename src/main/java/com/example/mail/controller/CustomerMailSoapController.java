@@ -2,6 +2,7 @@ package com.example.mail.controller;
 
 import com.example.mail.dto.response.CustomerMailForReplyDTO;
 import com.example.mail.service.CustomerMailService;
+import com.example.mail.util.XmlUtils;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -117,34 +118,20 @@ public class CustomerMailSoapController {
         return "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                 + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
                 + "<soap:Body><" + operation + "Response xmlns=\"http://tempuri.org/\"><" + resultElement + ">"
-                + textElement("Message", result.getMessage())
-                + cdataElement("ReplyText", result.getReplyText())
-                + textElement("ClosedReason", result.getClosedReason())
-                + textElement("Comment", result.getComment())
-                + textElement("GetError", result.getGetError())
+                + XmlUtils.textElement("Message", result.getMessage())
+                + XmlUtils.cdataElement("ReplyText", result.getReplyText())
+                + XmlUtils.textElement("ClosedReason", result.getClosedReason())
+                + XmlUtils.textElement("Comment", result.getComment())
+                + XmlUtils.textElement("GetError", result.getGetError())
                 + "</" + resultElement + "></" + operation + "Response></soap:Body></soap:Envelope>";
     }
 
     private ResponseEntity<String> soapFault(HttpStatus status, String message) {
         String body = "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
                 + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body>"
-                + "<soap:Fault><faultcode>soap:Client</faultcode><faultstring>" + escapeXml(message)
+                + "<soap:Fault><faultcode>soap:Client</faultcode><faultstring>" + XmlUtils.escapeXml(message)
                 + "</faultstring></soap:Fault></soap:Body></soap:Envelope>";
         return ResponseEntity.status(status).contentType(MediaType.TEXT_XML).body(body);
-    }
-
-    private String textElement(String name, String value) {
-        return value == null ? "" : "<" + name + ">" + escapeXml(value) + "</" + name + ">";
-    }
-
-    private String cdataElement(String name, String value) {
-        return value == null ? "" : "<" + name + "><![CDATA[" + value.replace("]]>", "]]><![CDATA[>")
-                + "]]></" + name + ">";
-    }
-
-    private String escapeXml(String value) {
-        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                .replace("\"", "&quot;").replace("'", "&apos;");
     }
 
     private String localName(Element element) {

@@ -11,7 +11,8 @@ import com.example.mail.dto.response.EmailResponseDTO;
 import com.example.mail.repository.AttachmentRepository;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.SkillMasterRepo;
-import org.apache.tika.Tika;
+import com.example.mail.model.UserMaster;
+import com.example.mail.repository.UserMasterRepo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
@@ -19,7 +20,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.io.ByteArrayInputStream;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -30,13 +30,18 @@ public class EmailDisplayService {
     private final EmailRepository emailRepository;
     private final AttachmentRepository attachmentRepository;
     private final SkillMasterRepo skillMasterRepository;
-    private final Tika tika = new Tika();
+    private final UserMasterRepo userMasterRepo;
+    private final DocumentExtractionService documentExtractionService;
     private final Logger logger = LoggerFactory.getLogger("EMAIL_DISPLAY_SERVICE_LOGGER");
 
-    public EmailDisplayService(EmailRepository emailRepository, AttachmentRepository attachmentRepository, SkillMasterRepo skillMasterRepository) {
+    public EmailDisplayService(EmailRepository emailRepository, AttachmentRepository attachmentRepository,
+                               SkillMasterRepo skillMasterRepository, UserMasterRepo userMasterRepo,
+                               DocumentExtractionService documentExtractionService) {
         this.emailRepository = emailRepository;
         this.attachmentRepository = attachmentRepository;
         this.skillMasterRepository = skillMasterRepository;
+        this.userMasterRepo = userMasterRepo;
+        this.documentExtractionService = documentExtractionService;
     }
 
     public List<EmailResponseDTO> getUnassignedEmails() {
@@ -65,6 +70,26 @@ public class EmailDisplayService {
                 .orElseThrow(() -> new RuntimeException("Email not found"));
         email.setAssigned(true);
         emailRepository.save(email);
+    }
+
+    @Transactional
+    public Long assignNextPendingEmail(Long agentId) {
+        UserMaster user = userMasterRepo.findByAgentId(agentId);
+        if (user == null) {
+            return null;
+        }
+        List<Email> emails = emailRepository.findTopPendingEmailsBySkill(user.getSkillId());
+        if (emails == null || emails.isEmpty()) {
+            return 0L;
+        }
+        Email email = emails.get(0);
+        email.setAssigned(true);
+        email.setAssignedTime(java.time.LocalDateTime.now());
+        email.setAgentId(user.getAgentId());
+        email.setAgentFirstName(user.getFirstName());
+        email.setAgentLastName(user.getLastName());
+        emailRepository.save(email);
+        return email.getContactId();
     }
 
     private EmailResponseDTO mapToDTO(Email email) {
@@ -226,9 +251,8 @@ public class EmailDisplayService {
                 dto.setExtractedText("");
             } else {
                 dto.setFileDataBase64("");
-                try (ByteArrayInputStream stream = new ByteArrayInputStream(attachment.getFileData())){
-                    String extracted = tika.parseToString(stream);
-                    dto.setExtractedText(extracted.trim());
+                try {
+                    dto.setExtractedText(documentExtractionService.extractText(attachment.getFileData()));
                 } catch (Exception e) {
                     logger.error("Failed to extract text from attachment", e);
                     dto.setExtractedText("[Text Extraction failed for this document]");

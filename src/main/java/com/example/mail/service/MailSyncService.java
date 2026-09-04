@@ -1,6 +1,8 @@
 package com.example.mail.service;
 
 import com.example.mail.util.EmailCleaner;
+import com.example.mail.util.IdGenerator;
+import com.example.mail.util.MailUtils;
 import com.example.mail.config.MailProperties;
 import com.example.mail.model.*;
 import com.example.mail.repository.*;
@@ -170,7 +172,7 @@ public class MailSyncService {
         String messageId = message.getMessageID();
         email.setMessageId(messageId);
 
-        Long contactId = generateContactId();
+        Long contactId = IdGenerator.generateContactId();
         email.setContactId(contactId);
 
         String[] inReplyToHeaders = message.getHeader("In-Reply-To");
@@ -209,11 +211,11 @@ public class MailSyncService {
             logger.info("[Thread Match] Linked email to parent Message-ID: {} under Contact ID: {}",
                     resolvedParent.getMessageId(), resolvedParent.getContactId());
         } else {
-            email.setContactId(generateContactId());
+            email.setContactId(IdGenerator.generateContactId());
             logger.info("[New Thread] No parent found. Generated new Contact ID: {}", email.getContactId());
         }
         if (email.getContactId() == null) {
-            email.setContactId(generateContactId());
+            email.setContactId(IdGenerator.generateContactId());
         }
 
         email.setCustomerId(extractCustomerIdFromEmail(message));
@@ -229,27 +231,27 @@ public class MailSyncService {
 
         Address[] toAddresses = message.getRecipients(Message.RecipientType.TO);
         if (toAddresses != null && toAddresses.length > 0) {
-            email.setMailTo(addressArrayToString(toAddresses));
+            email.setMailTo(MailUtils.addressArrayToString(toAddresses));
         }
         Address[] ccAddresses = message.getRecipients(Message.RecipientType.CC);
         Address[] bccAddresses = message.getRecipients(Message.RecipientType.BCC);
         if (bccAddresses != null) {
-            email.setBcc(addressArrayToString(bccAddresses));
+            email.setBcc(MailUtils.addressArrayToString(bccAddresses));
         }
 
         if (toAddresses != null) {
-            email.setRecipient(addressArrayToString(toAddresses));
+            email.setRecipient(MailUtils.addressArrayToString(toAddresses));
         }
         if (ccAddresses != null) {
-            email.setCc(addressArrayToString(ccAddresses));
+            email.setCc(MailUtils.addressArrayToString(ccAddresses));
         }
 //        if (bccAddresses != null) {
 //            email.setBcc(addressArrayToString(bccAddresses));
 //        }
 
-        boolean isTo = isAddressInArray(currentAccountUsername, toAddresses);
-        boolean isCcOrBcc = isAddressInArray(currentAccountUsername, ccAddresses) ||
-                isAddressInArray(currentAccountUsername, bccAddresses);
+        boolean isTo = MailUtils.isAddressInArray(currentAccountUsername, toAddresses);
+        boolean isCcOrBcc = MailUtils.isAddressInArray(currentAccountUsername, ccAddresses) ||
+            MailUtils.isAddressInArray(currentAccountUsername, bccAddresses);
 
         if (!isTo && isCcOrBcc) {
             email.setNotToBeDownloaded(true);
@@ -305,33 +307,6 @@ public class MailSyncService {
 
     private Long determineSkillId(Email email) {
         return 1L;
-    }
-
-    private String addressArrayToString(Address[] addresses) {
-        if (addresses == null || addresses.length == 0) {
-            return "";
-        }
-
-        return Arrays.stream(addresses)
-                .map(address -> {
-                    if (address instanceof InternetAddress) {
-                        return ((InternetAddress) address).getAddress();
-                    }
-                    return address.toString();
-                })
-                .collect(Collectors.joining(","));
-    }
-
-    private boolean isAddressInArray(String email, Address[] addresses) {
-        if (addresses == null) return false;
-        for (Address address : addresses) {
-            if (address instanceof InternetAddress) {
-                if (((InternetAddress) address).getAddress().equalsIgnoreCase(email)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private void closeResources(Folder inbox, Store store) {
@@ -402,10 +377,6 @@ public class MailSyncService {
             logger.debug("Unhandled/Other MIME type: {}.", contentType);
         }
     }
-    private Long generateContactId() {
-        return System.currentTimeMillis() % 10000000L + 1000000L;
-    }
-
     private Long extractCustomerIdFromEmail(MimeMessage message) {
         return (System.currentTimeMillis() / 1000) % 1000000L;
     }
