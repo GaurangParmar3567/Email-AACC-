@@ -1,6 +1,9 @@
 package com.example.mail.controller;
 
 import com.example.mail.dto.MyNamespacePrefixMapper;
+import com.example.mail.dto.sendToChecker.SendToCheckerResult;
+import com.example.mail.dto.sendToChecker.SoapSendToCheckerRequestEnvelope;
+import com.example.mail.dto.sendToChecker.SoapSendToCheckerResponseEnvelope;
 import com.example.mail.dto.soapContact.*;
 import com.example.mail.dto.soapnew.*;
 import com.example.mail.model.Attachment;
@@ -58,7 +61,9 @@ public class ContactSoapController {
                         ,
                         CloseContactResponse.class,
                         CloseContactResult.class,
-                        CloseContactRequest.class
+                        CloseContactRequest.class,
+                        SoapSendToCheckerResponseEnvelope.class,
+                        SendToCheckerResult.class
             );
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize JAXB context", e);
@@ -244,6 +249,62 @@ public class ContactSoapController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("<error>SOAP Processing Exception: " + e.getMessage() + "</error>");
         }
+    }
+
+    @PostMapping(value = "/SendToChecker")
+    public ResponseEntity<String> sendToChecker(@RequestBody String rawXmlRequestBody) {
+        try {
+            JAXBContext requestContext = JAXBContext.newInstance(SoapSendToCheckerRequestEnvelope.class);
+            SoapSendToCheckerRequestEnvelope requestEnvelope = (SoapSendToCheckerRequestEnvelope)
+                    requestContext.createUnmarshaller().unmarshal(new StringReader(rawXmlRequestBody));
+
+            if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getSendToChecker() == null
+                    || requestEnvelope.getBody().getSendToChecker().getObjMail() == null) {
+                return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing SendToChecker objMail payload");
+            }
+
+            System.out.println(requestEnvelope.getBody());
+            makerTransferStatusService.saveMakerTransferDetails(
+                    requestEnvelope.getBody().getSendToChecker().getObjMail());
+            SendToCheckerResult result = new SendToCheckerResult();
+            result.setMailId(requestEnvelope.getBody().getSendToChecker().getObjMail().getMailId());
+            result.setMessage("Maker transfer details saved successfully");
+
+            SoapSendToCheckerResponseEnvelope responseEnvelope = new SoapSendToCheckerResponseEnvelope();
+            responseEnvelope.getBody().setSendToCheckerResponse(result);
+            Marshaller marshaller = RESPONSE_CONTEXT.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.FALSE);
+            StringWriter writer = new StringWriter();
+            marshaller.marshal(responseEnvelope, writer);
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_XML)
+                    .body(writer.toString());
+        } catch (JAXBException exception) {
+            logger.error("Invalid SendToChecker SOAP request", exception);
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid SendToChecker SOAP request");
+        } catch (IllegalArgumentException exception) {
+            logger.warn("Invalid SendToChecker input: {}", exception.getMessage());
+            return soapFault(HttpStatus.BAD_REQUEST, exception.getMessage());
+        } catch (Exception exception) {
+            logger.error("Failure while processing SendToChecker SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to save maker transfer details");
+        }
+    }
+
+    private ResponseEntity<String> soapFault(HttpStatus status, String message) {
+        String safeMessage = message == null ? "Invalid SOAP request" : message;
+        return ResponseEntity.status(status).contentType(MediaType.TEXT_XML).body(
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+                        + "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\"><soap:Body>"
+                        + "<soap:Fault><faultcode>soap:Client</faultcode><faultstring>"
+                        + escapeXml(safeMessage)
+                        + "</faultstring></soap:Fault></soap:Body></soap:Envelope>");
+    }
+
+    private String escapeXml(String value) {
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&apos;");
     }
 
     @PostMapping(value = "/GetAllClosedReasonCodes")

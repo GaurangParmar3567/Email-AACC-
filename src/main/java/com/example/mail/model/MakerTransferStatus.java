@@ -3,10 +3,30 @@ package com.example.mail.model;
 import lombok.Data;
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.sql.Timestamp;
 
 @Data
 @Entity
 @Table(name = "MakerTransferStatus")
+@NamedStoredProcedureQuery(
+    name = "MakerTransferStatus.saveMakerTransferDetails",
+    procedureName = "dbo.USP_SaveMakerTransferDetails",
+    parameters = {
+        @StoredProcedureParameter(name = "FromEmail", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "ToEmail", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "Subject", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "BodyContent", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "ContactID", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "AgentID", mode = ParameterMode.IN, type = Long.class),
+        @StoredProcedureParameter(name = "ClosedReason", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "Comment", mode = ParameterMode.IN, type = String.class),
+        @StoredProcedureParameter(name = "ActionID", mode = ParameterMode.IN, type = Long.class),
+        @StoredProcedureParameter(name = "ERRORNO", mode = ParameterMode.OUT, type = Integer.class),
+        @StoredProcedureParameter(name = "ERRORMSG", mode = ParameterMode.OUT, type = String.class),
+        @StoredProcedureParameter(name = "MailID", mode = ParameterMode.OUT, type = Long.class),
+        @StoredProcedureParameter(name = "AnswerDT", mode = ParameterMode.IN, type = Timestamp.class)
+    }
+)
 public class MakerTransferStatus {
 
     @Id
