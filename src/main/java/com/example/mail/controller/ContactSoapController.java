@@ -228,7 +228,7 @@ public class ContactSoapController {
         }
     }
 
-    @PostMapping("/getCustomerMail")
+    @PostMapping("/customerMail")
     public ResponseEntity<String> getCustomerMail(@RequestBody String rawXmlRequestBody) {
         try {
             SoapCustomerMailRequestEnvelope requestEnvelope = unmarshal(
