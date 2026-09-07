@@ -8,8 +8,11 @@ import com.example.mail.dto.soap.checker.SoapSendToCheckerResponseEnvelope;
 import com.example.mail.exception.ContactNotFoundException;
 import com.example.mail.service.AaccContactService;
 import com.example.mail.service.CustomerMailService;
+import com.example.mail.service.DeleteAgentSessionKeyService;
 import com.example.mail.service.EmailDisplayService;
+import com.example.mail.service.GetAgentSessionKeyService;
 import com.example.mail.service.MakerTransferStatusService;
+import com.example.mail.service.UpdateAuxDetailsService;
 import com.example.mail.util.XmlUtils;
 import com.example.mail.util.xml.CustomerMailNamespacePrefixMapper;
 import com.example.mail.util.xml.MyNamespacePrefixMapper;
@@ -43,15 +46,24 @@ public class ContactSoapController {
     private final EmailDisplayService emailDisplayService;
     private final MakerTransferStatusService makerTransferStatusService;
     private final CustomerMailService customerMailService;
+        private final UpdateAuxDetailsService updateAuxDetailsService;
+    private final DeleteAgentSessionKeyService deleteAgentSessionKeyService;
+    private final GetAgentSessionKeyService getAgentSessionKeyService;
 
     public ContactSoapController(AaccContactService aaccContactService,
                                  EmailDisplayService emailDisplayService,
                                  MakerTransferStatusService makerTransferStatusService,
-                                 CustomerMailService customerMailService) {
+                                 CustomerMailService customerMailService,
+                                 UpdateAuxDetailsService updateAuxDetailsService,
+                                 DeleteAgentSessionKeyService deleteAgentSessionKeyService,
+                                 GetAgentSessionKeyService getAgentSessionKeyService) {
         this.aaccContactService = aaccContactService;
         this.emailDisplayService = emailDisplayService;
         this.makerTransferStatusService = makerTransferStatusService;
         this.customerMailService = customerMailService;
+        this.updateAuxDetailsService = updateAuxDetailsService;
+        this.deleteAgentSessionKeyService = deleteAgentSessionKeyService;
+        this.getAgentSessionKeyService = getAgentSessionKeyService;
     }
 
     @PostMapping("/getContactAACC")
@@ -308,6 +320,79 @@ public class ContactSoapController {
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve customer mail");
         }
     }
+
+    @PostMapping(value = "/UpdateAuxDetails")
+    public ResponseEntity<String> updateAuxDetails(@RequestBody String rawXmlRequestBody) {
+        try {
+            UpdateAuxDetailsRequest request = unmarshal(rawXmlRequestBody, UpdateAuxDetailsRequest.class);
+            if (request == null || request.getAgentID() == null || request.getAgentID().trim().isEmpty()) {
+                return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: AgentID is required");
+            }
+
+            String agentId = request.getAgentID().trim();
+            logger.info("Received SOAP request for UpdateAuxDetails with agentID: {}", agentId);
+            UpdateAuxDetailsResponse response = updateAuxDetailsService.updateAuxDetails(request);
+            logger.debug("Generated SOAP response for Agent ID {}", agentId);
+            return xmlResponse(marshal(response));
+        } catch (JAXBException exception) {
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid UpdateAuxDetails SOAP request");
+        } catch (Exception exception) {
+            logger.error("Failure while processing UpdateAuxDetails SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
+       
+    @PostMapping(value = "/DeleteAgentSessionKey")
+    public ResponseEntity<String> deleteAgentSessionKey(@RequestBody String rawXmlRequestBody) {
+        try {
+            DeleteAgentSessionKeyRequest request = unmarshal(rawXmlRequestBody, DeleteAgentSessionKeyRequest.class);
+            if (request == null || request.getStrAvayaAgentID() == null
+                    || request.getStrAvayaAgentID().trim().isEmpty()
+                    || request.getStrSessionKey() == null || request.getStrSessionKey().trim().isEmpty()) {
+                return soapFault(HttpStatus.BAD_REQUEST,
+                        "Invalid SOAP request: strAvayaAgentID and strSessionKey are required");
+            }
+
+            String agentId = request.getStrAvayaAgentID().trim();
+            logger.info("Received SOAP request for DeleteAgentSessionKey with agentID: {}", agentId);
+            DeleteAgentSessionKeyResponse response = deleteAgentSessionKeyService.deleteAgentSessionKey(request);
+            logger.debug("Generated SOAP response for Agent ID {}", agentId);
+            return xmlResponse(marshal(response));
+        } catch (JAXBException exception) {
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid DeleteAgentSessionKey SOAP request");
+        } catch (Exception exception) {
+            logger.error("Failure while processing DeleteAgentSessionKey SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+    
+    
+    @PostMapping(value = "/GetAgentSessionKey")
+    public ResponseEntity<String> getAgentSessionKey(@RequestBody String rawXmlRequestBody) {
+        try {
+            GetAgentSessionKeyRequest request = unmarshal(rawXmlRequestBody, GetAgentSessionKeyRequest.class);
+            if (request == null || request.getStrAvayaAgentID() == null
+                    || request.getStrAvayaAgentID().trim().isEmpty()
+                    || request.getStrSessionKey() == null || request.getStrSessionKey().trim().isEmpty()) {
+                return soapFault(HttpStatus.BAD_REQUEST,
+                        "Invalid SOAP request: strAvayaAgentID and strSessionKey are required");
+            }
+
+            String agentId = request.getStrAvayaAgentID().trim();
+            logger.info("Received SOAP request for GetAgentSessionKey with agentID: {}", agentId);
+            GetAgentSessionKeyResponse response = getAgentSessionKeyService.getAgentSessionKey(request);
+            logger.debug("Generated SOAP response for Agent ID {}", agentId);
+            return xmlResponse(marshal(response));
+        } catch (JAXBException exception) {
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetAgentSessionKey SOAP request");
+        } catch (Exception exception) {
+            logger.error("Failure while processing GetAgentSessionKey SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
+
 
     private <T> T unmarshal(String xml, Class<T> type) throws JAXBException {
         Unmarshaller unmarshaller = JAXBContext.newInstance(type).createUnmarshaller();
