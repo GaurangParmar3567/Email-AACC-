@@ -7,10 +7,10 @@ import javax.xml.bind.annotation.XmlElement;
 @XmlAccessorType(XmlAccessType.FIELD)
 public class GetHistoryFromAACCRequest {
 
-    @XmlElement(name = "SearchType")
+    @XmlElement(name = "SearchType", namespace = "http://tempuri.org/")
     private String searchType;
 
-    @XmlElement(name = "SearchValue")
+    @XmlElement(name = "SearchValue", namespace = "http://tempuri.org/")
     private String searchValue;
 
     public String getSearchType() {

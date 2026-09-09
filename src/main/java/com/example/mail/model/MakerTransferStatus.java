@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 
 @Data
 @Entity
-@Table(name = "MakerTransferStatus")
+@Table(name = "maker_transfer_status")
 @NamedStoredProcedureQuery(
     name = "MakerTransferStatus.saveMakerTransferDetails",
     procedureName = "dbo.USP_SaveMakerTransferDetails",
@@ -17,7 +17,7 @@ import java.sql.Timestamp;
         @StoredProcedureParameter(name = "Subject", mode = ParameterMode.IN, type = String.class),
         @StoredProcedureParameter(name = "BodyContent", mode = ParameterMode.IN, type = String.class),
         @StoredProcedureParameter(name = "ContactID", mode = ParameterMode.IN, type = String.class),
-        @StoredProcedureParameter(name = "AgentID", mode = ParameterMode.IN, type = Long.class),
+        @StoredProcedureParameter(name = "AgentID", mode = ParameterMode.IN, type = String.class),
         @StoredProcedureParameter(name = "ClosedReason", mode = ParameterMode.IN, type = String.class),
         @StoredProcedureParameter(name = "Comment", mode = ParameterMode.IN, type = String.class),
         @StoredProcedureParameter(name = "ActionID", mode = ParameterMode.IN, type = Long.class),

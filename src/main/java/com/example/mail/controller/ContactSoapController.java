@@ -91,13 +91,18 @@ public class ContactSoapController {
 
     @PostMapping("/SendToChecker")
     public ResponseEntity<String> sendToChecker(@RequestBody String rawXmlRequestBody) {
+        logger.info("Received SendToChecker SOAP request");
         try {
             SoapSendToCheckerRequestEnvelope request = unmarshal(rawXmlRequestBody,
                     SoapSendToCheckerRequestEnvelope.class);
             if (request.getBody() == null || request.getBody().getSendToChecker() == null
                     || request.getBody().getSendToChecker().getObjMail() == null) {
+            logger.warn("Rejected SendToChecker request: missing objMail payload");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing SendToChecker objMail payload");
             }
+            logger.info("Saving maker transfer for ContactID {} and AgentID {}",
+                request.getBody().getSendToChecker().getObjMail().getContactId(),
+                request.getBody().getSendToChecker().getObjMail().getAgentId());
             makerTransferStatusService.saveMakerTransferDetails(
                     request.getBody().getSendToChecker().getObjMail());
             SendToCheckerResult result = new SendToCheckerResult();
@@ -105,10 +110,14 @@ public class ContactSoapController {
             result.setMessage("Maker transfer details saved successfully");
             SoapSendToCheckerResponseEnvelope envelope = new SoapSendToCheckerResponseEnvelope();
             envelope.getBody().setSendToCheckerResponse(result);
+                logger.info("SendToChecker completed successfully with MailID {}",
+                    request.getBody().getSendToChecker().getObjMail().getMailId());
             return xmlResponse(marshal(envelope));
         } catch (JAXBException exception) {
+            logger.warn("Rejected invalid SendToChecker SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid SendToChecker SOAP request");
         } catch (IllegalArgumentException exception) {
+            logger.warn("Rejected SendToChecker request: {}", exception.getMessage());
             return soapFault(HttpStatus.BAD_REQUEST, exception.getMessage());
         } catch (Exception exception) {
             logger.error("Failure while processing SendToChecker SOAP request", exception);
@@ -187,6 +196,30 @@ public class ContactSoapController {
         } catch (Exception exception) {
             logger.error("Failure while processing GetHistoryFromAACC SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
+    @PostMapping("/GetHistoryForContactID")
+    public ResponseEntity<String> getHistoryForContactId(@RequestBody String rawXmlRequestBody) {
+        try {
+            HistoryForContactIdRequestEnvelope request = unmarshal(
+                    rawXmlRequestBody, HistoryForContactIdRequestEnvelope.class);
+            if (request.getBody() == null || request.getBody().getRequest() == null
+                    || request.getBody().getRequest().getContactId() == null
+                    || request.getBody().getRequest().getContactId().trim().isEmpty()) {
+                return soapFault(HttpStatus.BAD_REQUEST, "contactID is required");
+            }
+
+            HistoryForContactIdResponseEnvelope response = new HistoryForContactIdResponseEnvelope();
+                response.getBody().getResponse().setResult(
+                    aaccContactService.getHistoryForContactId(
+                        request.getBody().getRequest().getContactId().trim()));
+            return xmlResponse(marshal(response));
+        } catch (JAXBException exception) {
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetHistoryForContactID SOAP request");
+        } catch (Exception exception) {
+            logger.error("Failure while processing GetHistoryForContactID SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve contact history");
         }
     }
 
@@ -425,4 +458,5 @@ public class ContactSoapController {
                         + XmlUtils.escapeXml(message == null ? "Invalid SOAP request" : message)
                         + "</faultstring></soap:Fault></soap:Body></soap:Envelope>");
     }
+
 }

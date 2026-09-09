@@ -22,7 +22,7 @@ public interface MakerTransferStatusRepository extends JpaRepository<MakerTransf
             @Param("Subject") String subject,
             @Param("BodyContent") String bodyContent,
             @Param("ContactID") String contactId,
-            @Param("AgentID") Long agentId,
+            @Param("AgentID") String agentId,
             @Param("ClosedReason") String closedReason,
             @Param("Comment") String comment,
             @Param("ActionID") Long actionId,

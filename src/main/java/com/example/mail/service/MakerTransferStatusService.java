@@ -29,6 +29,8 @@ public class MakerTransferStatusService {
      */
     @Transactional
     public MakerTransferStatus saveMakerTransferDetails(ObjMail mail) {
+        logger.info("Preparing maker transfer save for ContactID {} and AgentID {}",
+            mail.getContactId(), mail.getAgentId());
         MakerTransferStatus transferStatus = new MakerTransferStatus();
         transferStatus.setFromEmail(mail.getFromEmail());
         transferStatus.setToEmail(mail.getToEmail());
@@ -42,8 +44,9 @@ public class MakerTransferStatusService {
         transferStatus.setCreatedDate(LocalDateTime.now());
         transferStatus.setAnsweredDateTime(parseAnsweredDateTime(mail.getAnsweredDateTime()));
 
-        Long agentId = parseAgentId(mail.getAgentId());
+        String agentId = requireAgentId(mail.getAgentId());
 
+        logger.debug("Calling USP_SaveMakerTransferDetails for ContactID {}", transferStatus.getContactId());
         Map<String, Object> output = makerTransferStatusRepository.executeSaveMakerTransferDetails(
                 transferStatus.getFromEmail(),
                 transferStatus.getToEmail(),
@@ -59,12 +62,19 @@ public class MakerTransferStatusService {
         Number errorNumber = numberValue(output, "ERRORNO");
         String errorMessage = stringValue(output, "ERRORMSG");
         if (errorNumber != null && errorNumber.intValue() != 0) {
+            logger.error("USP_SaveMakerTransferDetails failed for ContactID {}. ERRORNO={}, ERRORMSG={}",
+                transferStatus.getContactId(), errorNumber, errorMessage);
             throw new IllegalStateException("USP_SaveMakerTransferDetails failed ("
                     + errorNumber + "): " + errorMessage);
         }
 
         Number mailIdValue = numberValue(output, "MailID");
-        Long mailId = mailIdValue == null ? null : mailIdValue.longValue();
+        if (mailIdValue == null || mailIdValue.longValue() <= 0) {
+            logger.error("USP_SaveMakerTransferDetails returned no valid MailID for ContactID {}. Output keys={}",
+                transferStatus.getContactId(), output.keySet());
+            throw new IllegalStateException("USP_SaveMakerTransferDetails did not return a MailID");
+        }
+        Long mailId = mailIdValue.longValue();
         transferStatus.setMailId(mailId);
         mail.setMailId(mailId);
         logger.info("Saved maker transfer MailID {} for ContactID {}", mailId, transferStatus.getContactId());
@@ -76,15 +86,11 @@ public class MakerTransferStatusService {
         return value == null ? null : value.toString();
     }
 
-    private Long parseAgentId(String agentId) {
+    private String requireAgentId(String agentId) {
         if (agentId == null || agentId.trim().isEmpty()) {
-            throw new IllegalArgumentException("AgentID is required and must be numeric");
+            throw new IllegalArgumentException("AgentID is required");
         }
-        try {
-            return Long.valueOf(agentId.trim());
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("AgentID must be numeric: " + agentId);
-        }
+        return agentId.trim();
     }
 
     private Number numberValue(Map<String, Object> values, String name) {

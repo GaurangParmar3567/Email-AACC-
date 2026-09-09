@@ -13,11 +13,13 @@ import com.example.mail.repository.ClosedReasonRepository;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.SkillMasterRepo;
 import com.example.mail.util.IdGenerator;
-import com.example.mail.util.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -201,6 +203,91 @@ public class AaccContactService {
         return result;
     }
 
+    @Transactional(readOnly = true)
+    public String getHistoryForContactId(String contactIdValue) {
+        StringBuilder html = new StringBuilder("<html><p align=\"center\"><b>Contact ID<br>")
+                .append(escapeHtml(contactIdValue)).append("</b></p>");
+        Long contactId;
+        try {
+            contactId = Long.parseLong(contactIdValue == null ? "" : contactIdValue.trim());
+        } catch (NumberFormatException exception) {
+            return html.append("<p><b>Error: Invalid contact ID</b></p></html>").toString();
+        }
+
+        List<Email> emails = emailRepository.findByContactId(contactId);
+        if (emails == null || emails.isEmpty()) {
+            return html.append("<p><b>No history found</b></p></html>").toString();
+        }
+        List<ContactAction> actions = contactActionRepository.findByContactId(contactId);
+        actions.sort(Comparator.comparing(ContactAction::getCreationTime,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+        if (actions.isEmpty()) {
+            for (Email email : emails) {
+                appendHistoryBlock(html, email.getSource(), email.getReceivedDate(), email.getMailFrom(),
+                        email.getMailTo(), email.getMailCc(), email.getSubject(), email.getBodyHtml(),
+                        email.getText(), email.getStatus(), null, null, email.getAttachments());
+            }
+        } else {
+            for (ContactAction action : actions) {
+                appendHistoryBlock(html, action.getSource(), action.getCreationTime(), action.getMailFrom(),
+                        action.getMailTo(), action.getMailCc(), action.getSubject(), action.getTextHtml(),
+                        action.getTextContent(), action.getClosedReasonName(), action.getComment(),
+                        action.getAgentFirstName(), action.getAttachments());
+            }
+        }
+        return html.append("</html>").toString();
+    }
+
+    private void appendHistoryBlock(StringBuilder html, String source, Object creationTime, String mailFrom,
+                                    String mailTo, String mailCc, String subject, String textHtml, String text,
+                                    String closedReason, String comment, String agentName,
+                                    List<Attachment> attachments) {
+        html.append("<hr><table border=1 cellspacing=0 cellpadding=4 width=90% align=center><tr><td><b>")
+                .append(escapeHtml(source == null ? "" : source.replace('_', ' '))).append("</b>");
+        appendHistoryField(html, "Date", formatHistoryDate(creationTime));
+        appendHistoryField(html, "From", mailFrom);
+        appendHistoryField(html, "To", mailTo);
+        appendHistoryField(html, "CC", mailCc);
+        appendHistoryField(html, "Subject", subject);
+        if (textHtml != null && !textHtml.trim().isEmpty()) {
+            html.append("<br><b>Content:</b><br>").append(textHtml);
+        } else {
+            appendHistoryField(html, "Content", text);
+        }
+        if (attachments != null) {
+            for (Attachment attachment : attachments) {
+                html.append("<br><a target=\"_blank\" href=\"")
+                        .append(escapeHtml(attachment.getInternalPath())).append("\">")
+                        .append(escapeHtml(attachment.getDisplayName())).append("</a>");
+            }
+        }
+        appendHistoryField(html, "Closed Reason", closedReason);
+        appendHistoryField(html, "Agent Note", comment);
+        appendHistoryField(html, "Created by Agent", agentName);
+        html.append("</td></tr></table>");
+    }
+
+    private void appendHistoryField(StringBuilder html, String label, String value) {
+        if (value != null && !value.trim().isEmpty()) {
+            html.append("<br><b>").append(label).append(":</b> ").append(escapeHtml(value));
+        }
+    }
+
+    private String formatHistoryDate(Object value) {
+        if (value instanceof Long) {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date((Long) value));
+        }
+        if (value instanceof Date) {
+            return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format((Date) value);
+        }
+        return value == null ? null : value.toString();
+    }
+
+    private String escapeHtml(String value) {
+        return value == null ? "" : value.replace("&", "&amp;").replace("<", "&lt;")
+                .replace(">", "&gt;").replace("\"", "&quot;").replace("'", "&#39;");
+    }
+
     public GetHistoryFromAACCResult getHistory(String searchType, String searchValue) {
         List<Email> emails = emailRepository.findAll();
         if (searchType != null && searchValue != null) {
@@ -208,21 +295,22 @@ public class AaccContactService {
             String value = searchValue.trim();
             if ("STATUS".equals(type)) {
                 emails = "NEW".equalsIgnoreCase(value)
-                        ? StringUtils.filter(emails, email -> "NEW".equalsIgnoreCase(email.getStatus()))
-                        : StringUtils.filter(emails, email -> email.getStatus() == null || !"NEW".equalsIgnoreCase(email.getStatus()));
-            } else if ("TOEMAIL".equals(type)) {
-                emails = StringUtils.filter(emails, email -> StringUtils.containsIgnoreCase(email.getMailTo(), value)
-                        || StringUtils.containsIgnoreCase(email.getMailFrom(), value));
+                        ? emailRepository.findByStatusIgnoreCase("NEW")
+                        : emailRepository.findAllExceptNewStatus();
+            } else if ("TOMAIL".equals(type)) {
+                emails = emailRepository.findByMailToContainingIgnoreCase(value);
             } else if ("SUBJECT".equals(type)) {
-                emails = StringUtils.filter(emails, email -> StringUtils.containsIgnoreCase(email.getOriginalSubject(), value));
+                emails = emailRepository.findByOriginalSubjectContainingIgnoreCase(value);
             } else if ("AGENTID".equals(type)) {
-                emails = filterByLong(emails, value, true, false);
+                emails = findByLong(value, emailRepository::findByAgentId);
             } else if ("ID".equals(type)) {
-                emails = filterByLong(emails, value, false, false);
+                emails = findByLong(value, emailRepository::findByContactId);
             } else if ("GTID".equals(type) || "LTID".equals(type)) {
-                emails = filterRelativeToContact(emails, value, "GTID".equals(type));
+                emails = findByLong(value, "GTID".equals(type)
+                        ? emailRepository::findByContactIdGreaterThan
+                        : emailRepository::findByContactIdLessThan);
             } else {
-                emails = StringUtils.filter(emails, email -> StringUtils.containsIgnoreCase(email.getMailFrom(), value));
+                emails = emailRepository.findByMailFromContainingIgnoreCase(value);
             }
         }
 
@@ -252,28 +340,10 @@ public class AaccContactService {
         return emails;
     }
 
-    private List<Email> filterByLong(List<Email> emails, String value, boolean agentId, boolean unused) {
+    private List<Email> findByLong(String value, java.util.function.Function<Long, List<Email>> finder) {
         try {
             Long id = Long.parseLong(value);
-            return StringUtils.filter(emails, email -> agentId
-                    ? id.equals(email.getAgentId())
-                    : id.equals(email.getId()));
-        } catch (NumberFormatException exception) {
-            return Collections.emptyList();
-        }
-    }
-
-    private List<Email> filterRelativeToContact(List<Email> emails, String value, boolean greaterThan) {
-        try {
-            Long id = Long.parseLong(value);
-            Email base = emailRepository.findById(id).orElse(null);
-            if (base == null || base.getCustomerId() == null) {
-                return Collections.emptyList();
-            }
-            return StringUtils.filter(emails, email -> email.getId() != null
-                    && email.getCustomerId() != null
-                    && email.getCustomerId().equals(base.getCustomerId())
-                    && (greaterThan ? email.getId() >= id : email.getId() <= id));
+            return finder.apply(id);
         } catch (NumberFormatException exception) {
             return Collections.emptyList();
         }

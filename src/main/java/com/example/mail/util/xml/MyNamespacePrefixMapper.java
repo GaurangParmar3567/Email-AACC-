@@ -8,6 +8,8 @@ public class MyNamespacePrefixMapper extends NamespacePrefixMapper {
         if ("http://schemas.xmlsoap.org/soap/envelope/".equals(namespaceUri)) return "soap";
         if ("http://tempuri.org/".equals(namespaceUri)) return "";
         if ("http://nortel.com/CCMMAgentWebservices/".equals(namespaceUri)) return "";
+        if ("http://www.w3.org/2001/XMLSchema-instance".equals(namespaceUri)) return "";
+        if ("http://www.w3.org/2001/XMLSchema".equals(namespaceUri)) return "";
         return suggestion == null ? "" : suggestion;
     }
 
