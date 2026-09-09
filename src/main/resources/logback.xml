@@ -59,6 +59,16 @@
         </rollingPolicy>
     </appender>
 
+    <appender name="MAIL_SERVICES_AUTH" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log-path}/Email-mail-services-auth.log</file>
+        <encoder><pattern>${file-pattern}</pattern></encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${log-path}/Email-mail-services-auth.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>${max-file-size}</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
     <!-- ========== ASYNC APPENDERS ========== -->
     <appender name="ASYNC_MAIN" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="MAIN_APP" />
@@ -85,6 +95,10 @@
         <appender-ref ref="CONSOLE" />
     </logger>
 
+    <logger name="MAIL_SERVICES_AUTH_LOGGER" level="DEBUG" additivity="false">
+        <appender-ref ref="MAIL_SERVICES_AUTH" />
+        <appender-ref ref="CONSOLE" />
+    </logger>
 
     <!-- Root Logger -->
     <root level="INFO">
