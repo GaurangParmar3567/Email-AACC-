@@ -1,3 +1,0 @@
-26-09-17 16:54:32.173 [main] INFO  MAIL_SYNC_LOGGER - MailSyncService initialized with EmailRepository.
-26-09-17 16:54:33.266 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =============================Starting mail sync task...===================================
-26-09-17 16:54:33.271 [scheduling-1] INFO  MAIL_SYNC_LOGGER - =================================Mail sync task completed.====================================
