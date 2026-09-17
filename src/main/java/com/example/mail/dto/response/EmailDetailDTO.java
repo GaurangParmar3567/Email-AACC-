@@ -31,7 +31,6 @@ public class EmailDetailDTO {
         private String status;
         private String priority;
         private Long priorityId;
-        private Long skillsetId;
         private String skillsetName;
         private Long skillId;
         private Integer timezone;

@@ -13,10 +13,15 @@ import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.SkillMasterRepo;
 import com.example.mail.model.UserMaster;
 import com.example.mail.repository.UserMasterRepo;
+import com.example.mail.dto.request.EmailFilterRequestDTO;
+import com.example.mail.repository.EmailSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -75,14 +80,20 @@ public class EmailDisplayService {
     @Transactional
     public Long assignNextPendingEmail(Long agentId) {
         UserMaster user = userMasterRepo.findByAgentId(agentId);
+
+        logger.info("Assigning next pending email for agentId: {}, skillId: {}",
+                agentId, (user != null ? user.getSkillId() : "null"));
         if (user == null) {
+            logger.warn("No user found in user_master for agentId: {}", agentId);
             return null;
         }
         List<Email> emails = emailRepository.findTopPendingEmailsBySkill(user.getSkillId());
         if (emails == null || emails.isEmpty()) {
+            logger.info("No pending emails found for skillId: {}", user.getSkillId());
             return 0L;
         }
         Email email = emails.get(0);
+        logger.info("Assigning email with contactId: {} to agentId: {}", email.getContactId(), agentId);
         email.setAssigned(true);
         email.setAssignedTime(java.time.LocalDateTime.now());
         email.setAgentId(user.getAgentId());
@@ -189,7 +200,6 @@ public class EmailDisplayService {
         routing.setStatus(email.getStatus());
         routing.setPriority(email.getPriority());
         routing.setPriorityId(email.getPriorityId());
-        routing.setSkillsetId(email.getSkillsetId());
         routing.setSkillsetName(email.getSkillsetName());
         routing.setSkillId(email.getSkillId());
         routing.setTimezone(email.getTimezone());
@@ -271,5 +281,26 @@ public class EmailDisplayService {
             dto.setFileSizeSummary("0 KB");
         }
         return dto;
+    }
+
+    public Page<EmailResponseDTO> filterEmails(EmailFilterRequestDTO filter) {
+        if (filter == null) {
+            filter = new EmailFilterRequestDTO();
+        }
+
+        int page = (filter.getPage() != null && filter.getPage() >= 0) ? filter.getPage() : 0;
+        int size = (filter.getSize() != null && filter.getSize() > 0) ? filter.getSize() : 20;
+
+        String sortBy = filter.getSortBy();
+        if (sortBy == null || sortBy.trim().isEmpty()) {
+            sortBy = "receivedDate";
+        }
+
+        Sort.Direction direction = "ASC".equalsIgnoreCase(filter.getSortDirection()) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+
+        Specification<Email> spec = EmailSpecification.withFilter(filter);
+        Page<Email> emails = emailRepository.findAll(spec, pageable);
+        return emails.map(this::mapToDTO);
     }
 }

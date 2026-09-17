@@ -13,6 +13,9 @@ public class SoapRequestBody {
     @XmlElement(name = "GetAllClosedReasonCodes", namespace = "http://nortel.com/CCMMAgentWebservices/")
     private GetAllClosedReasonCodesRequest getAllClosedReasonCodes;
 
+    @XmlElement(name = "GetAllSkillsets", namespace = "http://nortel.com/CCMMAgentWebservices/")
+    private GetAllSkillsetsRequest getAllSkillsets;
+
     @XmlElement(name = "CloseContact", namespace = "http://nortel.com/CCMMAgentWebservices/")
     private CloseContactRequest closeContact;
 
@@ -25,6 +28,14 @@ public class SoapRequestBody {
 
     public void setGetAllClosedReasonCodes(GetAllClosedReasonCodesRequest getAllClosedReasonCodes) {
         this.getAllClosedReasonCodes = getAllClosedReasonCodes;
+    }
+
+    public GetAllSkillsetsRequest getGetAllSkillsets() {
+        return getAllSkillsets;
+    }
+
+    public void setGetAllSkillsets(GetAllSkillsetsRequest getAllSkillsets) {
+        this.getAllSkillsets = getAllSkillsets;
     }
 
     public CloseContactRequest getCloseContact() {

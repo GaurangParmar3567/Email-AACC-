@@ -13,10 +13,13 @@ import com.example.mail.repository.ClosedReasonRepository;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.SkillMasterRepo;
 import com.example.mail.util.IdGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -24,6 +27,8 @@ import java.util.List;
 
 @Service
 public class AaccContactService {
+
+    private static final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
 
     private final EmailRepository emailRepository;
     private final ContactActionRepository contactActionRepository;
@@ -41,8 +46,10 @@ public class AaccContactService {
     }
 
     public ReadContactResult getContactDetails(Long contactId) {
+        logger.info("AaccContactService: Fetching contact details for ContactID: {}", contactId);
         List<Email> emailThread = emailRepository.findByContactId(contactId);
         if (emailThread == null || emailThread.isEmpty()) {
+            logger.warn("AaccContactService: Contact not found for ContactID: {}", contactId);
             throw new ContactNotFoundException(String.valueOf(contactId));
         }
 
@@ -50,8 +57,13 @@ public class AaccContactService {
                 .filter(email -> email.getParentEmail() == null)
                 .findFirst()
                 .orElse(emailThread.get(0));
+        Email agentEmail = emailThread.stream()
+                .filter(e -> e.getAgentId() != null)
+                .findFirst()
+                .orElse(rootEmail);
+
         ReadContactResult result = new ReadContactResult();
-        result.setId(rootEmail.getContactId());
+        result.setId(contactId);
         result.setCustomerID(rootEmail.getCustomerId());
         result.setOriginalSubject(rootEmail.getOriginalSubject());
         result.setSource(rootEmail.getSource());
@@ -64,9 +76,9 @@ public class AaccContactService {
         result.setMailCc(rootEmail.getMailCc());
         result.setContactType(rootEmail.getContactType());
 
-        if (rootEmail.getSkillsetId() != null) {
+        if (rootEmail.getSkillId() != null) {
             SkillsetDTO skillset = new SkillsetDTO();
-            skillset.setId(rootEmail.getSkillsetId());
+            skillset.setId(rootEmail.getSkillId());
             skillset.setName(rootEmail.getSkillsetName());
             result.setSkillset(skillset);
         }
@@ -80,26 +92,26 @@ public class AaccContactService {
             openTime.setMilliseconds(rootEmail.getOpenTime());
             result.setOpenTime(openTime);
         }
-        if (rootEmail.getAgentId() != null) {
+        if (agentEmail.getAgentId() != null) {
             AgentDTO agent = new AgentDTO();
-            agent.setId(rootEmail.getAgentId());
-            agent.setFirstName(rootEmail.getAgentFirstName());
-            agent.setLastName(rootEmail.getAgentLastName());
+            agent.setId(agentEmail.getAgentId());
+            agent.setFirstName(agentEmail.getAgentFirstName());
+            agent.setLastName(agentEmail.getAgentLastName());
             result.setAgent(agent);
         }
 
         ActionListDTO actionList = new ActionListDTO();
-        for (Email threadEmail : emailThread) {
-            if (threadEmail.getContactActions() == null) {
-                continue;
-            }
-            for (ContactAction action : threadEmail.getContactActions()) {
+        List<ContactAction> actions = contactActionRepository.findByContactId(contactId);
+        if (actions != null && !actions.isEmpty()) {
+            actions.sort(Comparator.comparing(ContactAction::getCreationTime,
+                    Comparator.nullsLast(Comparator.naturalOrder())));
+            for (ContactAction action : actions) {
                 if (action == null) {
                     continue;
                 }
                 AWActionDTO actionDto = new AWActionDTO();
                 actionDto.setId(action.getActionId());
-                actionDto.setContactID(action.getContactId());
+                actionDto.setContactID(contactId);
                 actionDto.setSubject(action.getSubject());
                 actionDto.setText(action.getTextContent());
                 actionDto.setTextHTML(action.getTextHtml());
@@ -147,26 +159,32 @@ public class AaccContactService {
             }
         }
         result.setActionList(actionList);
+        logger.info("AaccContactService: Successfully retrieved contact details for ContactID: {}", contactId);
         return result;
     }
 
     @Transactional
     public long transferToSkillset(long contactId, long skillsetId) {
+        logger.info("AaccContactService: Transferring ContactID: {} to SkillsetID: {}", contactId, skillsetId);
         List<Email> emails = requireEmails(contactId);
         String skillsetName = skillMasterRepository.findById(skillsetId)
                 .orElseThrow(() -> new IllegalArgumentException("Skillset not found for ID " + skillsetId))
                 .getName();
         for (Email email : emails) {
-            email.setSkillsetId(skillsetId);
+            email.setSkillId(skillsetId);
             email.setSkillsetName(skillsetName);
             email.setAssigned(false);
+            email.setStatus("Open");
         }
         emailRepository.saveAll(emails);
+        logger.info("AaccContactService: ContactID: {} successfully transferred to Skillset: {} ({})",
+                contactId, skillsetId, skillsetName);
         return contactId;
     }
 
     @Transactional
     public long closeContact(long contactId, String closureText, Long reasonCode, Boolean reasonSpecified) {
+        logger.info("AaccContactService: Closing ContactID: {}, reasonCode: {}", contactId, reasonCode);
         ContactAction action = new ContactAction();
         action.setActionId(IdGenerator.generateContactId());
         action.setContactId(contactId);
@@ -186,6 +204,7 @@ public class AaccContactService {
             email.setStatus("Closed");
         }
         emailRepository.saveAll(emails);
+        logger.info("AaccContactService: ContactID: {} successfully closed with ActionID: {}", contactId, action.getActionId());
         return action.getActionId();
     }
 

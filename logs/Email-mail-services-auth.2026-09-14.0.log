@@ -1,0 +1,3 @@
+26-09-14 23:50:41.600 [http-nio-8081-exec-9] INFO  MAIL_SERVICES_AUTH_LOGGER - Received setAgentLoginDetails SOAP/XML request
+26-09-14 23:50:41.611 [http-nio-8081-exec-9] INFO  MAIL_SERVICES_AUTH_LOGGER - Processing setAgentLoginDetails for agentLoginId=39000001, agentId=39000001, deviceName=DESKTOP-WIN11-01
+26-09-14 23:50:41.628 [http-nio-8081-exec-9] INFO  MAIL_SERVICES_AUTH_LOGGER - setAgentLoginDetails completed successfully for agentLoginId=39000001, generatedToken=bc213ba8adc5ab97

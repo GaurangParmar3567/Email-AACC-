@@ -3,6 +3,7 @@ package com.example.mail.model;
 import lombok.*;
 import javax.persistence.*;
 import java.util.Date;
+import com.example.mail.model.UserMaster;
 
 @Entity
 @Table(name = "email_queue_assignment")

@@ -1,0 +1,114 @@
+26-09-14 23:42:10.236 [main] INFO  com.example.mail.MailApplication - Starting MailApplication using Java 1.8.0_492 on Gaurang-Parmar with PID 26860 (C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-\target\classes started by AMD in C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-)
+26-09-14 23:42:10.239 [main] INFO  com.example.mail.MailApplication - The following 1 profile is active: "dev"
+26-09-14 23:42:11.499 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+26-09-14 23:42:11.648 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 129 ms. Found 15 JPA repository interfaces.
+26-09-14 23:42:12.592 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8081 (http)
+26-09-14 23:42:12.603 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+26-09-14 23:42:12.612 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+26-09-14 23:42:12.613 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.83]
+26-09-14 23:42:12.758 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+26-09-14 23:42:12.758 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2465 ms
+26-09-14 23:42:13.225 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+26-09-14 23:42:13.367 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 5.6.15.Final
+26-09-14 23:42:13.677 [main] INFO  o.h.annotations.common.Version - HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+26-09-14 23:42:13.851 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+26-09-14 23:42:14.290 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+26-09-14 23:42:14.328 [main] INFO  org.hibernate.dialect.Dialect - HHH000400: Using dialect: org.hibernate.dialect.SQLServerDialect
+26-09-14 23:42:16.090 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+26-09-14 23:42:16.107 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+26-09-14 23:42:17.633 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'contactSoapController' defined in file [C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-\target\classes\com\example\mail\controller\ContactSoapController.class]: Unsatisfied dependency expressed through constructor parameter 8; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'org.springframework.mail.javamail.JavaMailSender' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+26-09-14 23:42:17.635 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+26-09-14 23:42:17.638 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+26-09-14 23:42:17.641 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+26-09-14 23:42:17.643 [main] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+26-09-14 23:42:17.654 [main] INFO  o.s.b.a.l.ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-09-14 23:42:17.681 [main] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 8 of constructor in com.example.mail.controller.ContactSoapController required a bean of type 'org.springframework.mail.javamail.JavaMailSender' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'org.springframework.mail.javamail.JavaMailSender' in your configuration.
+
+26-09-14 23:44:21.428 [main] INFO  com.example.mail.MailApplication - Starting MailApplication using Java 1.8.0_492 on Gaurang-Parmar with PID 16176 (C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-\target\classes started by AMD in C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-)
+26-09-14 23:44:21.430 [main] INFO  com.example.mail.MailApplication - The following 1 profile is active: "dev"
+26-09-14 23:44:22.291 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+26-09-14 23:44:22.425 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 122 ms. Found 15 JPA repository interfaces.
+26-09-14 23:44:23.196 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8081 (http)
+26-09-14 23:44:23.203 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+26-09-14 23:44:23.206 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+26-09-14 23:44:23.206 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.83]
+26-09-14 23:44:23.305 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+26-09-14 23:44:23.305 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1830 ms
+26-09-14 23:44:23.611 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+26-09-14 23:44:23.665 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 5.6.15.Final
+26-09-14 23:44:23.830 [main] INFO  o.h.annotations.common.Version - HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+26-09-14 23:44:23.932 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+26-09-14 23:44:24.155 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+26-09-14 23:44:24.175 [main] INFO  org.hibernate.dialect.Dialect - HHH000400: Using dialect: org.hibernate.dialect.SQLServerDialect
+26-09-14 23:44:25.372 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+26-09-14 23:44:25.385 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+26-09-14 23:44:26.757 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.beans.factory.UnsatisfiedDependencyException: Error creating bean with name 'contactSoapController' defined in file [C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-\target\classes\com\example\mail\controller\ContactSoapController.class]: Unsatisfied dependency expressed through constructor parameter 8; nested exception is org.springframework.beans.factory.NoSuchBeanDefinitionException: No qualifying bean of type 'org.springframework.mail.javamail.JavaMailSender' available: expected at least 1 bean which qualifies as autowire candidate. Dependency annotations: {}
+26-09-14 23:44:26.759 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Closing JPA EntityManagerFactory for persistence unit 'default'
+26-09-14 23:44:26.761 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+26-09-14 23:44:26.762 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+26-09-14 23:44:26.775 [main] INFO  o.a.catalina.core.StandardService - Stopping service [Tomcat]
+26-09-14 23:44:26.786 [main] INFO  o.s.b.a.l.ConditionEvaluationReportLoggingListener - 
+
+Error starting ApplicationContext. To display the conditions report re-run your application with 'debug' enabled.
+26-09-14 23:44:26.810 [main] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Parameter 8 of constructor in com.example.mail.controller.ContactSoapController required a bean of type 'org.springframework.mail.javamail.JavaMailSender' that could not be found.
+
+
+Action:
+
+Consider defining a bean of type 'org.springframework.mail.javamail.JavaMailSender' in your configuration.
+
+26-09-14 23:49:42.209 [main] INFO  com.example.mail.MailApplication - Starting MailApplication using Java 1.8.0_492 on Gaurang-Parmar with PID 10380 (C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-\target\classes started by AMD in C:\Users\AMD\Desktop\Email AACC\gaurang\Email-AACC-)
+26-09-14 23:49:42.211 [main] INFO  com.example.mail.MailApplication - The following 1 profile is active: "dev"
+26-09-14 23:49:43.131 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+26-09-14 23:49:43.260 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 117 ms. Found 15 JPA repository interfaces.
+26-09-14 23:49:44.002 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port(s): 8081 (http)
+26-09-14 23:49:44.011 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8081"]
+26-09-14 23:49:44.013 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+26-09-14 23:49:44.014 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/9.0.83]
+26-09-14 23:49:44.111 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+26-09-14 23:49:44.111 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1855 ms
+26-09-14 23:49:44.406 [main] INFO  o.h.jpa.internal.util.LogHelper - HHH000204: Processing PersistenceUnitInfo [name: default]
+26-09-14 23:49:44.465 [main] INFO  org.hibernate.Version - HHH000412: Hibernate ORM core version 5.6.15.Final
+26-09-14 23:49:44.623 [main] INFO  o.h.annotations.common.Version - HCANN000001: Hibernate Commons Annotations {5.1.2.Final}
+26-09-14 23:49:44.720 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+26-09-14 23:49:44.949 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+26-09-14 23:49:44.968 [main] INFO  org.hibernate.dialect.Dialect - HHH000400: Using dialect: org.hibernate.dialect.SQLServerDialect
+26-09-14 23:49:46.169 [main] INFO  o.h.e.t.j.p.i.JtaPlatformInitiator - HHH000490: Using JtaPlatform implementation: [org.hibernate.engine.transaction.jta.platform.internal.NoJtaPlatform]
+26-09-14 23:49:46.181 [main] INFO  o.s.o.j.LocalContainerEntityManagerFactoryBean - Initialized JPA EntityManagerFactory for persistence unit 'default'
+26-09-14 23:49:47.707 [main] INFO  com.example.mail.config.MailConfig - Configuring JavaMailSender using active database credentials (Host: smtp.gmail.com, Port: 587, Username: parmargaurav392001@gmail.com)
+26-09-14 23:49:47.708 [main] INFO  com.example.mail.config.MailConfig - Configured SMTP -> Host: smtp.gmail.com, Port: 587, Auth: true, StartTLS: true, SSLTrust: *, SSLProtocols: TLSv1.2
+26-09-14 23:49:47.991 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+26-09-14 23:49:48.522 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8081"]
+26-09-14 23:49:48.569 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port(s): 8081 (http) with context path ''
+26-09-14 23:49:48.895 [main] INFO  com.example.mail.MailApplication - Started MailApplication in 7.058 seconds (JVM running for 7.616)
+26-09-14 23:50:10.871 [http-nio-8081-exec-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+26-09-14 23:50:10.871 [http-nio-8081-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+26-09-14 23:50:10.873 [http-nio-8081-exec-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
+26-09-14 23:50:45.841 [http-nio-8081-exec-8] INFO  c.e.m.s.MakerTransferStatusService - Preparing maker transfer save for ContactID 4143121 and AgentID 39000001
+26-09-14 23:50:45.841 [http-nio-8081-exec-8] WARN  c.e.m.s.MakerTransferStatusService - Invalid AnsweredDateTime 'string'; storing the current time instead
+26-09-14 23:50:46.036 [http-nio-8081-exec-8] INFO  c.e.m.s.MakerTransferStatusService - Saved maker transfer MailID 30034 for ContactID 4143121
+26-09-14 23:50:54.239 [http-nio-8081-exec-10] INFO  Customer_Mail_LOGGER - Maker mail requested for ContactID 4143121
+26-09-14 23:50:54.243 [http-nio-8081-exec-10] INFO  Customer_Mail_LOGGER - Maker mail response prepared for ContactID 4143121

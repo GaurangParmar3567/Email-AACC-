@@ -15,6 +15,8 @@ public interface MakerTransferStatusRepository extends JpaRepository<MakerTransf
 
     Optional<MakerTransferStatus> findFirstByContactIdOrderByMailIdDesc(String contactId);
 
+    java.util.List<MakerTransferStatus> findByContactIdOrderByMailIdDesc(String contactId);
+
     @Procedure(name = "MakerTransferStatus.saveMakerTransferDetails")
     Map<String, Object> executeSaveMakerTransferDetails(
             @Param("FromEmail") String fromEmail,

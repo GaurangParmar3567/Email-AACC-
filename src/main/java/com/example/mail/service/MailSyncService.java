@@ -30,6 +30,7 @@ public class MailSyncService {
     private final EmailRepository emailRepository;
     private final MailProperties mailProperties;
     private final ContactActionRepository contactActionRepository;
+    private final AttachmentRepository attachmentRepository;
     private final SkillMasterRepo skillMasterRepository;
     private final PriorityMasterRepo priorityMasterRepository;
     private final UserMasterRepo userMasterRepo;
@@ -49,10 +50,11 @@ public class MailSyncService {
 //    @Value("${mail.store.protocol}")
 //    private String protocol;
 
-    public MailSyncService(EmailRepository emailRepository, MailProperties mailProperties, ContactActionRepository contactActionRepository, SkillMasterRepo skillMasterRepository, PriorityMasterRepo priorityMasterRepository, UserMasterRepo userMasterRepo) {
+    public MailSyncService(EmailRepository emailRepository, MailProperties mailProperties, ContactActionRepository contactActionRepository, AttachmentRepository attachmentRepository, SkillMasterRepo skillMasterRepository, PriorityMasterRepo priorityMasterRepository, UserMasterRepo userMasterRepo) {
         this.emailRepository = emailRepository;
         this.mailProperties = mailProperties;
         this.contactActionRepository = contactActionRepository;
+        this.attachmentRepository = attachmentRepository;
         this.skillMasterRepository = skillMasterRepository;
         this.priorityMasterRepository = priorityMasterRepository;
         this.userMasterRepo = userMasterRepo;
@@ -156,7 +158,7 @@ public class MailSyncService {
                 logger.info("[{}] Successfully archived email: {}", account.getUsername(), subject);
             }
         } catch (Exception e) {
-            logger.error("[{}] CRITICAL: Failed to sync folder '{}'. Reason: {}", account.getUsername(), folderName, e.getMessage());
+            logger.error("[{}] CRITICAL: Failed to sync folder '{}'. Reason: {}", account.getUsername(), folderName, e.getMessage(), e);
         } finally {
             closeFolder(folder);
         }
@@ -290,9 +292,10 @@ public class MailSyncService {
         String cleanedBody = EmailCleaner.cleanBody(email.getBody());
         email.setBody(cleanedBody);
         determineSkillsetAndPriority(email);
-        emailRepository.save(email);
-        logger.info("[{}] Saved email ID: {}. Attachments count: {}", currentAccountUsername, email.getMessageId(), email.getAttachments().size());
-        createInitialContactAction(email, currentAccountUsername);
+        Email savedEmail = emailRepository.save(email);
+        logger.info("[{}] Saved email ID: {}. Contact ID: {}. Attachments count: {}", 
+                currentAccountUsername, savedEmail.getMessageId(), savedEmail.getContactId(), savedEmail.getAttachments().size());
+        createInitialContactAction(savedEmail, currentAccountUsername);
     }
 
     private void closeFolder(Folder folder) {
@@ -401,29 +404,41 @@ public class MailSyncService {
         }
 
         if (matchedSkill != null) {
-            email.setSkillsetId(matchedSkill.getId());
-            email.setSkillsetName(matchedSkill.getName());
             email.setSkillId(matchedSkill.getId());
+            email.setSkillsetName(matchedSkill.getName());
         } else {
-            SkillMaster defaultSkill = skillMasterRepository.findByName(mailProperties.getDefaultSkillName());
-            email.setSkillsetId(defaultSkill.getId());
-            email.setSkillsetName(defaultSkill.getName());
-            email.setSkillId(defaultSkill.getId());
+            String defaultSkillName = mailProperties != null && mailProperties.getDefaultSkillName() != null
+                    ? mailProperties.getDefaultSkillName() : "EM_MAK_MAKER";
+            SkillMaster defaultSkill = skillMasterRepository != null ? skillMasterRepository.findByName(defaultSkillName) : null;
+            if (defaultSkill != null) {
+                email.setSkillId(defaultSkill.getId());
+                email.setSkillsetName(defaultSkill.getName());
+            } else if (allSkills != null && !allSkills.isEmpty()) {
+                email.setSkillId(allSkills.get(0).getId());
+                email.setSkillsetName(allSkills.get(0).getName());
+            } else {
+                email.setSkillId(1L);
+                email.setSkillsetName(defaultSkillName);
+            }
         }
 
-        List<PriorityMaster> allPriorities = priorityMasterRepository.findAll();
-        PriorityMaster defaultPriority = priorityMasterRepository.findByPriorityLevel(mailProperties.getDefaultPriorityName());
-        String matchedPriority = defaultPriority.getPriorityLevel();
-        Long matchedPriorityId = defaultPriority.getId();
+        List<PriorityMaster> allPriorities = priorityMasterRepository != null ? priorityMasterRepository.findAll() : java.util.Collections.emptyList();
+        String defaultPriorityName = mailProperties != null && mailProperties.getDefaultPriorityName() != null
+                ? mailProperties.getDefaultPriorityName() : "Priority_3_Medium";
+        PriorityMaster defaultPriority = priorityMasterRepository != null ? priorityMasterRepository.findByPriorityLevel(defaultPriorityName) : null;
+        String matchedPriority = defaultPriority != null ? defaultPriority.getPriorityLevel() : defaultPriorityName;
+        Long matchedPriorityId = defaultPriority != null ? defaultPriority.getId() : 3L;
 
-        for (PriorityMaster priority : allPriorities) {
-            if (priority.getKeywords() != null) {
-                String[] keywordArray = priority.getKeywords().split(",");
-                for (String keyword : keywordArray) {
-                    if (subject.contains(keyword.trim().toLowerCase())) {
-                        matchedPriority = priority.getPriorityLevel();
-                        matchedPriorityId = priority.getId();
-                        break;
+        if (allPriorities != null) {
+            for (PriorityMaster priority : allPriorities) {
+                if (priority != null && priority.getKeywords() != null) {
+                    String[] keywordArray = priority.getKeywords().split(",");
+                    for (String keyword : keywordArray) {
+                        if (subject.contains(keyword.trim().toLowerCase())) {
+                            matchedPriority = priority.getPriorityLevel();
+                            matchedPriorityId = priority.getId();
+                            break;
+                        }
                     }
                 }
             }
@@ -436,8 +451,13 @@ public class MailSyncService {
     private void createInitialContactAction(Email email, String currentAccountUsername) {
         ContactAction action = new ContactAction();
         action.setActionId(System.currentTimeMillis() % 10000000L + 1000000L);
-        action.setContact(email);
-        action.setContactId(email.getContactId());
+
+        Long contactId = email.getContactId();
+        if (contactId == null) {
+            contactId = IdGenerator.generateContactId();
+            email.setContactId(contactId);
+        }
+        action.setContactId(contactId);
         action.setSubject(email.getSubject());
         action.setTextContent(email.getText());
         action.setTextHtml(email.getBodyHtml());
@@ -449,6 +469,17 @@ public class MailSyncService {
         action.setActionType("Email");
         action.setCreationTime(System.currentTimeMillis());
         action.setTimeAllocated(20);
-        contactActionRepository.save(action);
+
+        ContactAction savedAction = contactActionRepository.save(action);
+
+        if (email.getAttachments() != null && !email.getAttachments().isEmpty()) {
+            for (Attachment att : email.getAttachments()) {
+                att.setContactAction(savedAction);
+            }
+            attachmentRepository.saveAll(email.getAttachments());
+        }
+
+        logger.info("[{}] Created initial ContactAction (Action ID: {}) with Contact ID: {}",
+                currentAccountUsername, savedAction.getActionId(), savedAction.getContactId());
     }
 }

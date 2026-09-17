@@ -9,6 +9,6 @@ import javax.xml.bind.annotation.XmlElement;
 @Data
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SoapSendToCheckerResponseBody {
-    @XmlElement(name = "SendToCheckerResponse", namespace = "")
+    @XmlElement(name = "SendToCheckerResponse", namespace = "http://tempuri.org/")
     private SendToCheckerResult sendToCheckerResponse;
 }

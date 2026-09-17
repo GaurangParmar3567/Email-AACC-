@@ -5,4 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface MailSendStatusRepository extends JpaRepository<MailSendStatus, Long> {}
+public interface MailSendStatusRepository extends JpaRepository<MailSendStatus, Long> {
+
+    java.util.List<MailSendStatus> findByContactIdOrderByMailIdDesc(String contactId);
+}

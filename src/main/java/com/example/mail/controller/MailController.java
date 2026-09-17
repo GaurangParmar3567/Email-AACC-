@@ -1,5 +1,6 @@
 package com.example.mail.controller;
 
+import com.example.mail.dto.request.EmailFilterRequestDTO;
 import com.example.mail.dto.request.EmailRequestAIDTO;
 import com.example.mail.dto.response.EmailThreadResponseDTO;
 import com.example.mail.model.Attachment;
@@ -65,7 +66,7 @@ public class MailController {
 
         String mimeType = attachment.getMimeType() != null ? attachment.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
-        logger.info("Attachment found: {}", attachment);
+        logger.info("Attachment found: id={}, fileName={}, mimeType={}", attachment.getId(), attachment.getFileName(), mimeType);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(mimeType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + attachment.getFileName() + "\"")
@@ -82,5 +83,27 @@ public class MailController {
         }
 
         return ResponseEntity.ok(conversationThread);
+    }
+
+    /**
+     * Endpoint to fetch all emails with custom filter parameters via POST (JSON body):
+     * e.g. POST /api/v1/email/filter with { "contactId": 123, "status": "Open", "page": 0, "size": 20 }
+     */
+    @PostMapping("/filter")
+    public ResponseEntity<Page<EmailResponseDTO>> filterEmails(@RequestBody(required = false) EmailFilterRequestDTO filter) {
+        logger.info("Fetching emails with filters (POST): {}", filter);
+        Page<EmailResponseDTO> emails = emailDisplayService.filterEmails(filter);
+        return ResponseEntity.ok(emails);
+    }
+
+    /**
+     * Endpoint to fetch all emails with custom filter parameters via GET (query parameters):
+     * e.g. GET /api/v1/email/filter?contactId=123&status=Open&page=0&size=20
+     */
+    @GetMapping("/filter")
+    public ResponseEntity<Page<EmailResponseDTO>> filterEmailsGet(@ModelAttribute EmailFilterRequestDTO filter) {
+        logger.info("Fetching emails with filters (GET): {}", filter);
+        Page<EmailResponseDTO> emails = emailDisplayService.filterEmails(filter);
+        return ResponseEntity.ok(emails);
     }
 }

@@ -1,0 +1,6 @@
+26-09-14 23:50:10.924 [http-nio-8081-exec-1] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SendMail SOAP request
+26-09-14 23:50:15.872 [http-nio-8081-exec-1] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Mail sent successfully to gaurang.190410107060@gmail.com and recorded in MailSendStatus (MailID: 10003)
+26-09-14 23:50:45.827 [http-nio-8081-exec-8] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SendToChecker SOAP request
+26-09-14 23:50:45.836 [http-nio-8081-exec-8] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Saving maker transfer for ContactID 4143121 and AgentID 39000001
+26-09-14 23:50:46.041 [http-nio-8081-exec-8] INFO  MAIL_SERVICES_AVAAYA_LOGGER - SendToChecker completed successfully with MailID 30034
+26-09-14 23:50:54.252 [http-nio-8081-exec-10] DEBUG MAIL_SERVICES_AVAAYA_LOGGER - Generated SOAP response for GetCustomerMailforMaker and ContactID 4143121

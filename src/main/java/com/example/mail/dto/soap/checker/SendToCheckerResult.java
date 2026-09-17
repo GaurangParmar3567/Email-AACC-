@@ -8,10 +8,10 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @Data
-@XmlRootElement(name = "SendToCheckerResponse", namespace = "")
+@XmlRootElement(name = "SendToCheckerResponse", namespace = "http://tempuri.org/")
 @XmlAccessorType(XmlAccessType.FIELD)
 public class SendToCheckerResult {
-    @XmlElement(name = "SendToCheckerResult")
+    @XmlElement(name = "SendToCheckerResult", namespace = "http://tempuri.org/")
     private ResultPayload result = new ResultPayload();
 
     public void setMailId(Long mailId) {
@@ -25,10 +25,10 @@ public class SendToCheckerResult {
     @Data
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class ResultPayload {
-        @XmlElement(name = "MailId")
+        @XmlElement(name = "MailId", namespace = "http://tempuri.org/")
         private Long mailId;
 
-        @XmlElement(name = "Message")
+        @XmlElement(name = "Message", namespace = "http://tempuri.org/")
         private String message;
     }
 }

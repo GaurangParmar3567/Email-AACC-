@@ -1,0 +1,13 @@
+26-09-15 00:20:06.474 [http-nio-8081-exec-2] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SendToChecker SOAP request
+26-09-15 00:20:06.658 [http-nio-8081-exec-2] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Saving maker transfer for ContactID 4143121 and AgentID 39000001
+26-09-15 00:20:06.877 [http-nio-8081-exec-2] INFO  MAIL_SERVICES_AVAAYA_LOGGER - SendToChecker completed successfully with MailID 30035
+26-09-15 15:20:25.929 [http-nio-8081-exec-1] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SendMail SOAP request
+26-09-15 15:20:26.105 [http-nio-8081-exec-1] WARN  MAIL_SERVICES_AVAAYA_LOGGER - Skipping attachment /Outbound/1001/9339387/doc.pdf because file does not exist
+26-09-15 15:20:30.969 [http-nio-8081-exec-1] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Mail sent successfully to recipient@example.com and recorded in MailSendStatus (MailID: 10004)
+26-09-15 15:23:39.588 [http-nio-8081-exec-6] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SendMail SOAP request
+26-09-15 15:23:39.598 [http-nio-8081-exec-6] WARN  MAIL_SERVICES_AVAAYA_LOGGER - Skipping attachment /Outbound/1001/9339387/doc.pdf because file does not exist
+26-09-15 15:23:44.179 [http-nio-8081-exec-6] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Mail sent successfully to gaurang.190410107060@gmail.com and recorded in MailSendStatus (MailID: 10005)
+26-09-15 15:24:35.808 [http-nio-8081-exec-5] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Received SendMail SOAP request
+26-09-15 15:24:35.817 [http-nio-8081-exec-5] WARN  MAIL_SERVICES_AVAAYA_LOGGER - Skipping attachment /Outbound/1001/9339387/doc.pdf because file does not exist
+26-09-15 15:24:35.817 [http-nio-8081-exec-5] WARN  MAIL_SERVICES_AVAAYA_LOGGER - Skipping attachment /Outbound/1001/9339387/doc.pdf because file does not exist
+26-09-15 15:24:40.329 [http-nio-8081-exec-5] INFO  MAIL_SERVICES_AVAAYA_LOGGER - Mail sent successfully to gaurang.190410107060@gmail.com and recorded in MailSendStatus (MailID: 10006)

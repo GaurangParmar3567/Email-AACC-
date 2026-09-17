@@ -57,7 +57,7 @@ public class MailSendStatus {
     @Column(name = "Comment", length = 255)
     private String comment;
 
-    @Column(name = "ActionID", nullable = false)
+    @Column(name = "ActionID")
     private Long actionId;
 
     @Column(name = "AnsweredDateTime")

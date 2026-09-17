@@ -6,15 +6,20 @@ public class MyNamespacePrefixMapper extends NamespacePrefixMapper {
     @Override
     public String getPreferredPrefix(String namespaceUri, String suggestion, boolean requirePrefix) {
         if ("http://schemas.xmlsoap.org/soap/envelope/".equals(namespaceUri)) return "soap";
+        if ("http://www.w3.org/2003/05/soap-envelope".equals(namespaceUri)) return "soap12";
+        if ("http://www.w3.org/2001/XMLSchema-instance".equals(namespaceUri)) return "xsi";
+        if ("http://www.w3.org/2001/XMLSchema".equals(namespaceUri)) return "xsd";
         if ("http://tempuri.org/".equals(namespaceUri)) return "";
         if ("http://nortel.com/CCMMAgentWebservices/".equals(namespaceUri)) return "";
-        if ("http://www.w3.org/2001/XMLSchema-instance".equals(namespaceUri)) return "";
-        if ("http://www.w3.org/2001/XMLSchema".equals(namespaceUri)) return "";
         return suggestion == null ? "" : suggestion;
     }
 
     @Override
     public String[] getPreDeclaredNamespaceUris() {
-        return new String[] {"http://schemas.xmlsoap.org/soap/envelope/"};
+        return new String[] {
+            "http://www.w3.org/2001/XMLSchema-instance",
+            "http://www.w3.org/2001/XMLSchema",
+            "http://schemas.xmlsoap.org/soap/envelope/"
+        };
     }
 }

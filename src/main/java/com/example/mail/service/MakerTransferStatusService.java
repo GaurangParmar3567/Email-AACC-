@@ -40,7 +40,11 @@ public class MakerTransferStatusService {
         transferStatus.setAgentId(mail.getAgentId());
         transferStatus.setClosedReason(mail.getClosedReason());
         transferStatus.setComment(mail.getComment());
-        transferStatus.setActionId(mail.getActionId());
+        Long actionId = mail.getActionId();
+        if (actionId == null) {
+            actionId = System.currentTimeMillis() % 10000000L + 1000000L;
+        }
+        transferStatus.setActionId(actionId);
         transferStatus.setCreatedDate(LocalDateTime.now());
         transferStatus.setAnsweredDateTime(parseAnsweredDateTime(mail.getAnsweredDateTime()));
 
@@ -102,11 +106,23 @@ public class MakerTransferStatusService {
         if (answeredDateTime == null || answeredDateTime.trim().isEmpty()) {
             return LocalDateTime.now();
         }
+        String val = answeredDateTime.trim();
+        if (val.startsWith("<![CDATA[") && val.endsWith("]]>")) {
+            val = val.substring(9, val.length() - 3).trim();
+        }
         try {
-            return LocalDateTime.parse(answeredDateTime, DateTimeFormatter.ISO_DATE_TIME);
+            return LocalDateTime.parse(val, DateTimeFormatter.ISO_DATE_TIME);
         } catch (Exception exception) {
-            logger.warn("Invalid AnsweredDateTime '{}'; storing the current time instead", answeredDateTime);
-            return LocalDateTime.now();
+            try {
+                return LocalDateTime.parse(val, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            } catch (Exception ex) {
+                try {
+                    return LocalDateTime.parse(val, DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
+                } catch (Exception ex2) {
+                    logger.warn("Invalid AnsweredDateTime '{}'; storing the current time instead", answeredDateTime);
+                    return LocalDateTime.now();
+                }
+            }
         }
     }
 }

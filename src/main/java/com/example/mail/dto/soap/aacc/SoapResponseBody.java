@@ -13,6 +13,9 @@ public class SoapResponseBody {
     @XmlElement(name = "GetAllClosedReasonCodesResponse", namespace = "")
     private GetAllClosedReasonCodesResponse getAllClosedReasonCodesResponse;
 
+    @XmlElement(name = "GetAllSkillsetsResponse", namespace = "")
+    private GetAllSkillsetsResponse getAllSkillsetsResponse;
+
     @XmlElement(name = "CloseContactResponse", namespace = "")
     private CloseContactResponse closeContactResponse;
 
@@ -25,6 +28,14 @@ public class SoapResponseBody {
 
     public void setGetAllClosedReasonCodesResponse(GetAllClosedReasonCodesResponse getAllClosedReasonCodesResponse) {
         this.getAllClosedReasonCodesResponse = getAllClosedReasonCodesResponse;
+    }
+
+    public GetAllSkillsetsResponse getGetAllSkillsetsResponse() {
+        return getAllSkillsetsResponse;
+    }
+
+    public void setGetAllSkillsetsResponse(GetAllSkillsetsResponse getAllSkillsetsResponse) {
+        this.getAllSkillsetsResponse = getAllSkillsetsResponse;
     }
 
     public CloseContactResponse getCloseContactResponse() {

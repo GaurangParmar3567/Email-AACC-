@@ -21,11 +21,7 @@ public class ContactAction {
     @Column(name = "action_id", nullable = false)
     private Long actionId;  // Maps to <id>16041775</id> in XML
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "contact_id")
-    private Email contact;
-
-    @Column(name = "contact_id", insertable = false, updatable = false)
+    @Column(name = "contact_id")
     private Long contactId;
 
     // @Lob
@@ -93,7 +89,7 @@ public class ContactAction {
     // @Lob
     private String mailCc;
 
-    @OneToMany(mappedBy = "contactAction", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "contactAction")
     private List<Attachment> attachments = new ArrayList<>();
 
 }

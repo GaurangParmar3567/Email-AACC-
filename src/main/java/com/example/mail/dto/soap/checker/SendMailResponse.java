@@ -11,6 +11,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "SendMailResponse", namespace = "http://tempuri.org/")
 @Data
 public class SendMailResponse {
-    @XmlElement(name = "SendMailResult")
+    @XmlElement(name = "SendMailResult", namespace = "http://tempuri.org/")
     private SendMailResult sendMailResult;
 }

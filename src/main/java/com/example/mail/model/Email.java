@@ -90,9 +90,6 @@ public class Email {
     @Column(length = 100)
     private String status;  // New, Open, Closed, etc.
 
-    @Column(name = "skillset_id")
-    private Long skillsetId;
-
     @Column(name = "skillset_name")
     private String skillsetName;
 
@@ -137,9 +134,6 @@ public class Email {
     // --- Relations ---
     @OneToMany(mappedBy = "email", cascade = CascadeType.ALL)
     private List<Attachment> attachments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "contact", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ContactAction> contactActions = new ArrayList<>();
 
     //@Lob
     @Column(columnDefinition = "NVARCHAR(MAX)")
