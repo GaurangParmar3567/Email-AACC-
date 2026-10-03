@@ -10,6 +10,8 @@ public class AgentLoginRequest {
 
     private String agentLoginId;
     private String agentLoginPwd;
+    private String username;
+    private String password;
     private String webServiceIp;
     private String agentSessionId;
     private Integer agentId;
@@ -18,7 +20,10 @@ public class AgentLoginRequest {
     private String tokenId;
 
     public String getAgentLoginId() {
-        return agentLoginId;
+        if (agentLoginId != null && !agentLoginId.trim().isEmpty()) {
+            return agentLoginId;
+        }
+        return username;
     }
 
     public void setAgentLoginId(String agentLoginId) {
@@ -26,11 +31,36 @@ public class AgentLoginRequest {
     }
 
     public String getAgentLoginPwd() {
-        return agentLoginPwd;
+        if (agentLoginPwd != null && !agentLoginPwd.trim().isEmpty()) {
+            return agentLoginPwd;
+        }
+        return password;
     }
 
     public void setAgentLoginPwd(String agentLoginPwd) {
         this.agentLoginPwd = agentLoginPwd;
+    }
+
+    public String getUsername() {
+        if (username != null && !username.trim().isEmpty()) {
+            return username;
+        }
+        return agentLoginId;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        if (password != null && !password.trim().isEmpty()) {
+            return password;
+        }
+        return agentLoginPwd;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     public String getWebServiceIp() {

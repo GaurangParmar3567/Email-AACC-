@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "MailSendStatus")
+@Table(name = "mail_send_status")
 public class MailSendStatus {
 
     @Id

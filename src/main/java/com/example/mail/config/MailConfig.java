@@ -64,10 +64,10 @@ public class MailConfig {
 
         SmtpMailCredential credential = activeCredential.orElse(null);
         if (credential != null) {
-            logger.info("Configuring JavaMailSender using active database credentials (Host: {}, Port: {}, Username: {})",
+            logger.info("configureMailSender() - Configuring JavaMailSender using active database credentials (Host: {}, Port: {}, Username: {})",
                     credential.getHost(), credential.getPort(), credential.getUsername());
         } else {
-            logger.warn("No active SMTP credential found in database. Falling back to application properties.");
+            logger.warn("configureMailSender() - No active SMTP credential found in database. Falling back to application properties.");
         }
 
         // Host: database -> properties -> default
@@ -150,7 +150,7 @@ public class MailConfig {
         boolean startTlsRequired = smtpStartTlsRequired;
         String sslProtocols = (smtpSslProtocols != null && !smtpSslProtocols.trim().isEmpty()) ? smtpSslProtocols.trim() : "TLSv1.2";
 
-        logger.info("Configured SMTP -> Host: {}, Port: {}, Auth: {}, StartTLS: {}, SSLTrust: {}, SSLProtocols: {}",
+        logger.info("configureMailSender() - Configured SMTP -> Host: {}, Port: {}, Auth: {}, StartTLS: {}, SSLTrust: {}, SSLProtocols: {}",
                 host, port, auth, startTls, trust, sslProtocols);
 
         mailSender.setHost(host);

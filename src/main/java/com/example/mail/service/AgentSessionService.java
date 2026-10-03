@@ -71,4 +71,66 @@ public class AgentSessionService {
         session.setStatus("LoggedOut");
         return repository.save(session);
     }
+
+    public AgentSession updateLogoutBySessionOrToken(String sessionOrToken) {
+        return logoutAgentByUsernameOrId(sessionOrToken);
+    }
+
+    public AgentSession logoutAgentByUsernameOrId(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            return null;
+        }
+        String trimmed = identifier.trim();
+
+        // 1. Try by tokenId
+        java.util.Optional<AgentSession> byToken = repository.findByTokenId(trimmed);
+        if (byToken.isPresent()) {
+            AgentSession session = byToken.get();
+            session.setLogoutTime(LocalDateTime.now());
+            session.setLastActivity(LocalDateTime.now());
+            session.setStatus("LoggedOut");
+            return repository.save(session);
+        }
+
+        // 2. Try as numeric sessionId or agentId
+        try {
+            long numericValue = Long.parseLong(trimmed);
+
+            // Check if it's sessionId directly
+            java.util.Optional<AgentSession> bySessionId = repository.findById(numericValue);
+            if (bySessionId.isPresent()) {
+                AgentSession session = bySessionId.get();
+                session.setLogoutTime(LocalDateTime.now());
+                session.setLastActivity(LocalDateTime.now());
+                session.setStatus("LoggedOut");
+                return repository.save(session);
+            }
+
+            // Check if it's an agentId with active session
+            java.util.List<AgentSession> activeSessions = repository.findByAgentIdAndStatus((int) numericValue, "Online");
+            if (activeSessions != null && !activeSessions.isEmpty()) {
+                AgentSession lastSession = null;
+                for (AgentSession s : activeSessions) {
+                    s.setLogoutTime(LocalDateTime.now());
+                    s.setLastActivity(LocalDateTime.now());
+                    s.setStatus("LoggedOut");
+                    lastSession = repository.save(s);
+                }
+                return lastSession;
+            }
+
+            // Fallback: latest session for this agentId
+            java.util.List<AgentSession> latestSessions = repository.findByAgentIdOrderByLoginTimeDesc((int) numericValue);
+            if (latestSessions != null && !latestSessions.isEmpty()) {
+                AgentSession session = latestSessions.get(0);
+                session.setLogoutTime(LocalDateTime.now());
+                session.setLastActivity(LocalDateTime.now());
+                session.setStatus("LoggedOut");
+                return repository.save(session);
+            }
+        } catch (NumberFormatException ignored) {
+        }
+
+        return null;
+    }
 }

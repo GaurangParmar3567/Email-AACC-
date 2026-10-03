@@ -1,20 +1,29 @@
 package com.example.mail.dto.soap.aacc;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-@XmlRootElement(name = "DeleteAgentSessionKeyResponse", namespace = "")
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlRootElement(name = "DeleteAgentSessionKeyResponse", namespace = "http://tempuri.org/")
 public class DeleteAgentSessionKeyResponse {
 
-    public DeleteAgentSessionKeyResponse() {}
-    
-    public DeleteAgentSessionKeyResult deleteAgentSessionKeyResult ;
-    
-    public DeleteAgentSessionKeyResponse(DeleteAgentSessionKeyResult deleteAgentSessionKeyResult) {
-     this.deleteAgentSessionKeyResult = deleteAgentSessionKeyResult;
+    @XmlElement(name = "DeleteAgentSessionKeyResult", namespace = "http://tempuri.org/")
+    private DeleteAgentSessionKeyResult deleteAgentSessionKeyResult;
+
+    @XmlElement(name = "GetAgentSessionKeyResult", namespace = "http://tempuri.org/")
+    private DeleteAgentSessionKeyResult getAgentSessionKeyResult;
+
+    public DeleteAgentSessionKeyResponse(DeleteAgentSessionKeyResult result) {
+        this.deleteAgentSessionKeyResult = result;
+        this.getAgentSessionKeyResult = result;
     }
 }

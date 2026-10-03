@@ -24,10 +24,10 @@ public class DeleteAgentSessionKeyService {
         try {
             agentAuthorizationRepository.deleteAvayaSessionSp(
                     request.getStrAvayaAgentID(), request.getStrSessionKey());
-            log.info("ExecuteNonQuery Successfully");
+            log.info("deleteAgentSessionKey() - ExecuteNonQuery Successfully");
             message = "DeleteAgentSessionKey Triggered Successfully";
         } catch (Exception exception) {
-            log.error("DeleteAgentSessionKey request received from agent: {}",
+            log.error("deleteAgentSessionKey() - Request received from agent: {}",
                     request.getStrAvayaAgentID(), exception);
         }
         return new DeleteAgentSessionKeyResponse(new DeleteAgentSessionKeyResult(

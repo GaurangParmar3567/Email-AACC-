@@ -7,34 +7,25 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlRootElement(name = "UpdateAuxDetails",namespace = "")
+@XmlRootElement(name = "UpdateAuxDetails", namespace = "http://tempuri.org/")
 public class UpdateAuxDetailsRequest {
 
+    @XmlElement(name = "AgentID", namespace = "http://tempuri.org/")
     private String agentID;
+
+    @XmlElement(name = "AuxCode", namespace = "http://tempuri.org/")
     private String auxCode;
+
+    @XmlElement(name = "StartTime", namespace = "http://tempuri.org/")
     private String startTime;
+
+    @XmlElement(name = "EndTime", namespace = "http://tempuri.org/")
     private String endTime;
-
-    public UpdateAuxDetailsRequest() {}
-
-    @XmlElement(name = "AgentID")
-    public String getAgentID() { return agentID; }
-    public void setAgentID(String agentID) { this.agentID = agentID; }
-
-    @XmlElement(name = "AuxCode")
-    public String getAuxCode() { return auxCode; }
-    public void setAuxCode(String auxCode) { this.auxCode = auxCode; }
-
-    @XmlElement(name = "StartTime")
-    public String getStartTime() { return startTime; }
-    public void setStartTime(String startTime) { this.startTime = startTime; }
-
-    @XmlElement(name = "EndTime")
-    public String getEndTime() { return endTime; }
-    public void setEndTime(String endTime) { this.endTime = endTime; }
 }

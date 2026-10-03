@@ -25,10 +25,10 @@ public class GetAgentSessionKeyService {
         try {
             agentAuthorizationRepository.getAgentSessionKeySp(
                     request.getStrAvayaAgentID(), request.getStrSessionKey());
-            log.info("ExecuteNonQuery Successfully");
+            log.info("getAgentSessionKey() - ExecuteNonQuery Successfully");
             message = "GetAgentSessionKey Triggered Successfully";
         } catch (Exception exception) {
-            log.error("GetAgentSessionKey request received from agent: {}",
+            log.error("getAgentSessionKey() - Request received from agent: {}",
                     request.getStrAvayaAgentID(), exception);
         }
         return new GetAgentSessionKeyResponse(new GetAgentSessionKeyResult(

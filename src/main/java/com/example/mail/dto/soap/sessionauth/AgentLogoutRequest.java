@@ -9,6 +9,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class AgentLogoutRequest {
 
     private String agentSessionId;
+    private String username;
 
     public String getAgentSessionId() {
         return agentSessionId;
@@ -16,5 +17,13 @@ public class AgentLogoutRequest {
 
     public void setAgentSessionId(String agentSessionId) {
         this.agentSessionId = agentSessionId;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

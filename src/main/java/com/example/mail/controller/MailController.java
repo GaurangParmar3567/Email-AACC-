@@ -35,7 +35,7 @@ public class MailController {
     public ResponseEntity<Page<EmailResponseDTO>> getInbox(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        logger.info("Fetching unassigned emails");
+        logger.info("getInbox() - Fetching unassigned emails");
         return ResponseEntity.ok(emailDisplayService.getUnassignedEmails(PageRequest.of(page, size)));
     }
 
@@ -47,26 +47,26 @@ public class MailController {
 
     @GetMapping("/{id}")
     public ResponseEntity<EmailResponseDTO> getEmailById(@PathVariable Long id) {
-        logger.info("Fetching email by id: {}", id);
+        logger.info("getEmailById() - Fetching email by id: {}", id);
         EmailResponseDTO email = emailDisplayService.getEmailById(id);
         return ResponseEntity.ok(email);
     }
 
     @PutMapping("/{id}/assign/{agentId}")
     public ResponseEntity<Void> assignEmail(@PathVariable Long id, @PathVariable Long agentId) {
-        logger.info("Assigning email id: {} to agent id: {}", id, agentId);
+        logger.info("assignEmail() - Assigning email id: {} to agent id: {}", id, agentId);
         emailDisplayService.markAsAssigned(id, agentId);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/attachments/{attachmentId}")
     public ResponseEntity<byte[]> getAttachment(@PathVariable Long attachmentId) {
-        logger.info("Fetching attachment by id: {}", attachmentId);
+        logger.info("getAttachment() - Fetching attachment by id: {}", attachmentId);
         Attachment attachment = emailDisplayService.getAttachmentById(attachmentId);
 
         String mimeType = attachment.getMimeType() != null ? attachment.getMimeType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
 
-        logger.info("Attachment found: id={}, fileName={}, mimeType={}", attachment.getId(), attachment.getFileName(), mimeType);
+        logger.info("getAttachment() - Attachment found: id={}, fileName={}, mimeType={}", attachment.getId(), attachment.getFileName(), mimeType);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(mimeType))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + attachment.getFileName() + "\"")
@@ -75,7 +75,7 @@ public class MailController {
 
     @PostMapping("/get-email-details")
     public ResponseEntity<EmailThreadResponseDTO> getEmailDetails(@RequestBody EmailRequestAIDTO emailRequestDTO) {
-        logger.info("Fetching complete interaction thread history tracking contactId: {}", emailRequestDTO.getContactId());
+        logger.info("getEmailDetails() - Fetching complete interaction thread history tracking contactId: {}", emailRequestDTO.getContactId());
 
         EmailThreadResponseDTO conversationThread = emailDisplayService.getEmailByIdAI(emailRequestDTO.getContactId());
         if (conversationThread == null) {
@@ -91,7 +91,7 @@ public class MailController {
      */
     @PostMapping("/filter")
     public ResponseEntity<Page<EmailResponseDTO>> filterEmails(@RequestBody(required = false) EmailFilterRequestDTO filter) {
-        logger.info("Fetching emails with filters (POST): {}", filter);
+        logger.info("filterEmails() - Fetching emails with filters (POST): {}", filter);
         Page<EmailResponseDTO> emails = emailDisplayService.filterEmails(filter);
         return ResponseEntity.ok(emails);
     }
@@ -102,7 +102,7 @@ public class MailController {
      */
     @GetMapping("/filter")
     public ResponseEntity<Page<EmailResponseDTO>> filterEmailsGet(@ModelAttribute EmailFilterRequestDTO filter) {
-        logger.info("Fetching emails with filters (GET): {}", filter);
+        logger.info("filterEmailsGet() - Fetching emails with filters (GET): {}", filter);
         Page<EmailResponseDTO> emails = emailDisplayService.filterEmails(filter);
         return ResponseEntity.ok(emails);
     }

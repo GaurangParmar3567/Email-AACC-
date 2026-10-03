@@ -77,7 +77,7 @@ public class MailConfigurationService {
      * @return a populated SmtpMailCredential with all required SMTP fields
      */
     public SmtpMailCredential getMailConfiguration(String contactId, Integer skillset) {
-        logger.info("Extracting mail configuration for ContactID: {}, Skillset: {} using procedure: {}",
+        logger.info("getMailConfiguration() - Extracting mail configuration for ContactID: {}, Skillset: {} using procedure: {}",
                 contactId, skillset, procedureName);
 
         // 1. Attempt to fetch credentials from stored procedure
@@ -88,16 +88,16 @@ public class MailConfigurationService {
             if (results != null && !results.isEmpty()) {
                 SmtpMailCredential procedureCredential = results.get(0);
                 if (hasUsableDetails(procedureCredential)) {
-                    logger.info("Successfully extracted SMTP configuration from procedure {} (Host: {}, Port: {}, Username: {}, FromEmail: {})",
+                    logger.info("getMailConfiguration() - Successfully extracted SMTP configuration from procedure {} (Host: {}, Port: {}, Username: {}, FromEmail: {})",
                             procedureName, procedureCredential.getHost(), procedureCredential.getPort(),
                             procedureCredential.getUsername(), procedureCredential.getFromEmail());
                     return procedureCredential;
                 }
             }
-            logger.warn("Stored procedure {} returned no usable credentials for ContactID: {}, Skillset: {}. Trying fallback.",
+            logger.warn("getMailConfiguration() - Stored procedure {} returned no usable credentials for ContactID: {}, Skillset: {}. Trying fallback.",
                     procedureName, contactId, skillset);
         } catch (Exception ex) {
-            logger.warn("Failed to execute stored procedure {} for ContactID: {}, Skillset: {} (Reason: {}). Falling back to active DB credentials.",
+            logger.warn("getMailConfiguration() - Failed to execute stored procedure {} for ContactID: {}, Skillset: {} (Reason: {}). Falling back to active DB credentials.",
                     procedureName, contactId, skillset, ex.getMessage());
         }
 
@@ -105,14 +105,14 @@ public class MailConfigurationService {
         if (smtpMailCredentialRepository != null) {
             Optional<SmtpMailCredential> activeCred = smtpMailCredentialRepository.findFirstByIsActiveTrueOrderByIdAsc();
             if (activeCred.isPresent() && hasUsableDetails(activeCred.get())) {
-                logger.info("Using active SMTP credential from database (Host: {}, Port: {}, Username: {})",
+                logger.info("getMailConfiguration() - Using active SMTP credential from database (Host: {}, Port: {}, Username: {})",
                         activeCred.get().getHost(), activeCred.get().getPort(), activeCred.get().getUsername());
                 return activeCred.get();
             }
         }
 
         // 3. Fallback to application.properties configuration
-        logger.info("Falling back to default application properties for SMTP configuration");
+        logger.info("getMailConfiguration() - Falling back to default application properties for SMTP configuration");
         return createFallbackCredentialFromProperties();
     }
 
@@ -167,7 +167,7 @@ public class MailConfigurationService {
         String sslProtocols = (defaultSslProtocols != null && !defaultSslProtocols.trim().isEmpty())
                 ? defaultSslProtocols.trim() : "TLSv1.2";
 
-        logger.info("Building dynamic JavaMailSender -> Host: {}, Port: {}, Username: {}, Auth: {}, StartTLS: {}, Trust: {}",
+        logger.info("createJavaMailSender() - Building dynamic JavaMailSender -> Host: {}, Port: {}, Username: {}, Auth: {}, StartTLS: {}, Trust: {}",
                 host, port, username, auth, startTls, trust);
 
         mailSender.setHost(host);

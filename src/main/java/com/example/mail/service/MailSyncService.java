@@ -58,19 +58,19 @@ public class MailSyncService {
         this.skillMasterRepository = skillMasterRepository;
         this.priorityMasterRepository = priorityMasterRepository;
         this.userMasterRepo = userMasterRepo;
-        logger.info("MailSyncService initialized with EmailRepository.");
+        logger.info("MailSyncService() - Initialized with EmailRepository.");
     }
 
     @Scheduled(fixedRate = 300000)
     public void fetchEmails() {
-        logger.info("=============================Starting mail sync task...===================================");
+        logger.info("fetchEmails() - =============================Starting mail sync task...===================================");
 
         for (MailProperties.MailAccount account : mailProperties.getAccounts()) {
-            logger.info("Syncing emails for account: {}", account.getUsername());
+            logger.info("fetchEmails() - Syncing emails for account: {}", account.getUsername());
             syncAccount(account);
         }
 
-        logger.info("=================================Mail sync task completed.====================================");
+        logger.info("fetchEmails() - =================================Mail sync task completed.====================================");
     }
 
     private void syncAccount(MailProperties.MailAccount account) {
@@ -100,16 +100,16 @@ public class MailSyncService {
             Session session = Session.getInstance(props);
             store = session.getStore(account.getProtocol());
 //            session.setDebug(true);
-            logger.info("Attempting standard authentication connection for user: {}", account.getUsername());
+            logger.info("syncAccount() - Attempting standard authentication connection for user: {}", account.getUsername());
             store.connect(account.getHost(), account.getPort(), account.getUsername(), account.getPassword());
-            logger.info("Successfully established connection to corporate mail store.");
+            logger.info("syncAccount() - Successfully established connection to corporate mail store.");
 
             String[] folderNames = {"INBOX"};
             for (String folderName : folderNames) {
                 syncFolder(store, folderName, account);
             }
         } catch (Exception e) {
-            logger.error("Error connecting to mail store for account: " + account.getUsername(), e);
+            logger.error("syncAccount() - Error connecting to mail store for account: " + account.getUsername(), e);
         } finally {
             closeStore(store);
         }
@@ -120,13 +120,13 @@ public class MailSyncService {
         try {
             folder = store.getFolder(folderName);
             if (!folder.exists()) {
-                logger.warn("[{}] Folder '{}' does not exist on server. Skipping.", account.getUsername(), folderName);
+                logger.warn("syncFolder() - [{}] Folder '{}' does not exist on server. Skipping.", account.getUsername(), folderName);
                 return;
             }
 
             folder.open(Folder.READ_WRITE);
             int messageCount = folder.getMessageCount();
-            logger.info("[{}] Folder '{}' opened. Total messages: {}", account.getUsername(), folderName, messageCount);
+            logger.info("syncFolder() - [{}] Folder '{}' opened. Total messages: {}", account.getUsername(), folderName, messageCount);
 
             // Setup Processed Folder
 //            String processedFolderName = "Processed-" + java.time.LocalDate.now();
@@ -145,20 +145,20 @@ public class MailSyncService {
                 String subject = mimeMessage.getSubject();
 
                 if (messageId != null && emailRepository.existsByMessageId(messageId)) {
-                    logger.debug("[{}] Skipping duplicate email. ID: {} | Subject: {}", account.getUsername(), messageId, subject);
+                    logger.debug("syncFolder() - [{}] Skipping duplicate email. ID: {} | Subject: {}", account.getUsername(), messageId, subject);
 //                    moveAndFlag(folder, message, processedFolder);
                     message.setFlag(Flags.Flag.DELETED, true);
                     continue;
                 }
 
-                logger.info("[{}] Processing new email. ID: {} | Subject: {}", account.getUsername(), messageId, subject);
+                logger.info("syncFolder() - [{}] Processing new email. ID: {} | Subject: {}", account.getUsername(), messageId, subject);
                 processAndSaveMessage(mimeMessage, account.getUsername());
 //                moveAndFlag(folder, message, processedFolder);
                 message.setFlag(Flags.Flag.DELETED, true);
-                logger.info("[{}] Successfully archived email: {}", account.getUsername(), subject);
+                logger.info("syncFolder() - [{}] Successfully archived email: {}", account.getUsername(), subject);
             }
         } catch (Exception e) {
-            logger.error("[{}] CRITICAL: Failed to sync folder '{}'. Reason: {}", account.getUsername(), folderName, e.getMessage(), e);
+            logger.error("syncFolder() - [{}] CRITICAL: Failed to sync folder '{}'. Reason: {}", account.getUsername(), folderName, e.getMessage(), e);
         } finally {
             closeFolder(folder);
         }
@@ -210,11 +210,11 @@ public class MailSyncService {
         if (resolvedParent != null) {
             email.setParentEmail(resolvedParent);
             email.setContactId(resolvedParent.getContactId());
-            logger.info("[Thread Match] Linked email to parent Message-ID: {} under Contact ID: {}",
+            logger.info("processAndSaveMessage() - [Thread Match] Linked email to parent Message-ID: {} under Contact ID: {}",
                     resolvedParent.getMessageId(), resolvedParent.getContactId());
         } else {
             email.setContactId(IdGenerator.generateContactId());
-            logger.info("[New Thread] No parent found. Generated new Contact ID: {}", email.getContactId());
+            logger.info("processAndSaveMessage() - [New Thread] No parent found. Generated new Contact ID: {}", email.getContactId());
         }
         if (email.getContactId() == null) {
             email.setContactId(IdGenerator.generateContactId());
@@ -257,7 +257,7 @@ public class MailSyncService {
 
         if (!isTo && isCcOrBcc) {
             email.setNotToBeDownloaded(true);
-            logger.info("Account is in CC/BCC. Setting notToBeDownloaded = true");
+            logger.info("processAndSaveMessage() - Account is in CC/BCC. Setting notToBeDownloaded = true");
         } else {
             email.setNotToBeDownloaded(false);
         }
@@ -293,19 +293,19 @@ public class MailSyncService {
         email.setBody(cleanedBody);
         determineSkillsetAndPriority(email);
         Email savedEmail = emailRepository.save(email);
-        logger.info("[{}] Saved email ID: {}. Contact ID: {}. Attachments count: {}", 
+        logger.info("processAndSaveMessage() - [{}] Saved email ID: {}. Contact ID: {}. Attachments count: {}", 
                 currentAccountUsername, savedEmail.getMessageId(), savedEmail.getContactId(), savedEmail.getAttachments().size());
         createInitialContactAction(savedEmail, currentAccountUsername);
     }
 
     private void closeFolder(Folder folder) {
         try { if (folder != null && folder.isOpen()) folder.close(true); }
-        catch (Exception e) { logger.error("Error closing folder", e); }
+        catch (Exception e) { logger.error("closeFolder() - Error closing folder", e); }
     }
 
     private void closeStore(Store store) {
         try { if (store != null && store.isConnected()) store.close(); }
-        catch (Exception e) { logger.error("Error closing store", e); }
+        catch (Exception e) { logger.error("closeStore() - Error closing store", e); }
     }
 
     private Long determineSkillId(Email email) {
@@ -315,15 +315,15 @@ public class MailSyncService {
     private void closeResources(Folder inbox, Store store) {
         try {
             if (inbox != null && inbox.isOpen()) inbox.close(true);
-        } catch (Exception e) { logger.error("Error closing inbox.", e); }
+        } catch (Exception e) { logger.error("closeResources() - Error closing inbox.", e); }
         try {
             if (store != null && store.isConnected()) store.close();
-        } catch (Exception e) { logger.error("Error closing store.", e); }
+        } catch (Exception e) { logger.error("closeResources() - Error closing store.", e); }
     }
 
     private void parseContent(Part part, Email email) throws Exception {
         String contentType = part.getContentType();
-        logger.debug("Parsing part with Content-Type: {}", contentType);
+        logger.debug("parseContent() - Parsing part with Content-Type: {}", contentType);
 
         if (part.isMimeType("text/plain") && email.getBody() == null) {
             email.setBody(part.getContent().toString());
@@ -337,13 +337,13 @@ public class MailSyncService {
             email.setHtml(true);
         }
         else if (part.isMimeType("message/rfc822")) {
-            logger.info("Found nested RFC822 message. Diving in...");
+            logger.info("parseContent() - Found nested RFC822 message. Diving in...");
             parseContent((Part) part.getContent(), email);
         }
         else if (part.isMimeType("multipart/*")) {
             Multipart multipart = (Multipart) part.getContent();
             int partCount = multipart.getCount();
-            logger.info("Identified 'multipart/*' content with {} sub-parts.", partCount);
+            logger.info("parseContent() - Identified 'multipart/*' content with {} sub-parts.", partCount);
 
             for (int i = 0; i < partCount; i++) {
                 BodyPart bodyPart = multipart.getBodyPart(i);
@@ -352,7 +352,7 @@ public class MailSyncService {
                 if (fileName != null || Part.ATTACHMENT.equalsIgnoreCase(disposition) || Part.INLINE.equalsIgnoreCase(disposition)) {
 
                     if (fileName != null) {
-                        logger.info("Found attachment: '{}'.", fileName);
+                        logger.info("parseContent() - Found attachment: '{}'.", fileName);
                         Attachment attachment = new Attachment();
                         attachment.setFileName(fileName);
 
@@ -377,7 +377,7 @@ public class MailSyncService {
                 }
             }
         } else {
-            logger.debug("Unhandled/Other MIME type: {}.", contentType);
+            logger.debug("parseContent() - Unhandled/Other MIME type: {}.", contentType);
         }
     }
     private Long extractCustomerIdFromEmail(MimeMessage message) {
@@ -424,7 +424,7 @@ public class MailSyncService {
 
         List<PriorityMaster> allPriorities = priorityMasterRepository != null ? priorityMasterRepository.findAll() : java.util.Collections.emptyList();
         String defaultPriorityName = mailProperties != null && mailProperties.getDefaultPriorityName() != null
-                ? mailProperties.getDefaultPriorityName() : "Priority_3_Medium";
+            ? mailProperties.getDefaultPriorityName() : "Priority_3_Medium";
         PriorityMaster defaultPriority = priorityMasterRepository != null ? priorityMasterRepository.findByPriorityLevel(defaultPriorityName) : null;
         String matchedPriority = defaultPriority != null ? defaultPriority.getPriorityLevel() : defaultPriorityName;
         Long matchedPriorityId = defaultPriority != null ? defaultPriority.getId() : 3L;
@@ -445,7 +445,7 @@ public class MailSyncService {
         }
         email.setPriority(matchedPriority);
         email.setPriorityId(matchedPriorityId);
-        logger.debug("Skill: {}, Priority: {}", email.getSkillsetName(), email.getPriority());
+        logger.debug("determineSkillsetAndPriority() - Skill: {}, Priority: {}", email.getSkillsetName(), email.getPriority());
     }
 
     private void createInitialContactAction(Email email, String currentAccountUsername) {
@@ -479,7 +479,7 @@ public class MailSyncService {
             attachmentRepository.saveAll(email.getAttachments());
         }
 
-        logger.info("[{}] Created initial ContactAction (Action ID: {}) with Contact ID: {}",
+        logger.info("createInitialContactAction() - [{}] Created initial ContactAction (Action ID: {}) with Contact ID: {}",
                 currentAccountUsername, savedAction.getActionId(), savedAction.getContactId());
     }
 }

@@ -21,7 +21,11 @@ import com.example.mail.service.EmailDisplayService;
 import com.example.mail.service.GetAgentSessionKeyService;
 import com.example.mail.service.MakerTransferStatusService;
 import com.example.mail.service.UpdateAuxDetailsService;
+import com.example.mail.service.UpdateAgentContactService;
+import com.example.mail.service.UploadAttachmentService;
+import com.example.mail.service.DeleteAttachmentFileService;
 import com.example.mail.service.MailConfigurationService;
+import com.example.mail.service.MailSendStatusService;
 import com.example.mail.model.SmtpMailCredential;
 import com.example.mail.config.MailProperties;
 import com.example.mail.model.MailSendStatus;
@@ -43,6 +47,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.mail.MessagingException;
@@ -77,8 +82,12 @@ public class ContactSoapController {
     private final SkillMasterRepo skillMasterRepo;
     private final JavaMailSender javaMailSender;
     private final MailSendStatusRepository mailSendStatusRepository;
+    private final MailSendStatusService mailSendStatusService;
     private final MailProperties mailProperties;
     private final MailConfigurationService mailConfigurationService;
+    private final UpdateAgentContactService updateAgentContactService;
+    private final UploadAttachmentService uploadAttachmentService;
+    private final DeleteAttachmentFileService deleteAttachmentFileService;
 
     public ContactSoapController(AaccContactService aaccContactService,
                                  EmailDisplayService emailDisplayService,
@@ -90,8 +99,12 @@ public class ContactSoapController {
                                  SkillMasterRepo skillMasterRepo,
                                  JavaMailSender javaMailSender,
                                  MailSendStatusRepository mailSendStatusRepository,
+                                 MailSendStatusService mailSendStatusService,
                                  MailProperties mailProperties,
-                                 MailConfigurationService mailConfigurationService) {
+                                 MailConfigurationService mailConfigurationService,
+                                 UpdateAgentContactService updateAgentContactService,
+                                 UploadAttachmentService uploadAttachmentService,
+                                 DeleteAttachmentFileService deleteAttachmentFileService) {
         this.aaccContactService = aaccContactService;
         this.emailDisplayService = emailDisplayService;
         this.makerTransferStatusService = makerTransferStatusService;
@@ -102,50 +115,54 @@ public class ContactSoapController {
         this.skillMasterRepo = skillMasterRepo;
         this.javaMailSender = javaMailSender;
         this.mailSendStatusRepository = mailSendStatusRepository;
+        this.mailSendStatusService = mailSendStatusService;
         this.mailProperties = mailProperties;
         this.mailConfigurationService = mailConfigurationService;
+        this.updateAgentContactService = updateAgentContactService;
+        this.uploadAttachmentService = uploadAttachmentService;
+        this.deleteAttachmentFileService = deleteAttachmentFileService;
     }
 
     @PostMapping("/getContactAACC")
     public ResponseEntity<String> readContact(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received getContactAACC SOAP request");
+        logger.info("readContact() - Received getContactAACC SOAP request");
         try {
             SoapRequestEnvelope request = unmarshal(rawXmlRequestBody, SoapRequestEnvelope.class);
             if (request == null || request.getBody() == null || request.getBody().getReadContact() == null) {
-                logger.warn("Rejected getContactAACC request: missing ReadContact element");
+                logger.warn("readContact() - Rejected getContactAACC request: missing ReadContact element");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing ReadContact element");
             }
             long contactId = request.getBody().getReadContact().getId();
-            logger.info("Processing getContactAACC for ContactID: {}", contactId);
+            logger.info("readContact() - Processing getContactAACC for ContactID: {}", contactId);
             ReadContactResponse response = new ReadContactResponse();
             response.setReadContactResult(aaccContactService.getContactDetails(contactId));
             SoapResponseBody body = new SoapResponseBody();
             body.setReadContactResponse(response);
             SoapResponseEnvelope envelope = new SoapResponseEnvelope();
             envelope.setBody(body);
-            logger.info("getContactAACC completed successfully for ContactID: {}", contactId);
+            logger.info("readContact() - getContactAACC completed successfully for ContactID: {}", contactId);
             return xmlResponse(marshal(envelope));
         } catch (ContactNotFoundException exception) {
-            logger.warn("getContactAACC contact not found: {}", exception.getMessage());
+            logger.warn("readContact() - getContactAACC contact not found: {}", exception.getMessage());
             return soapFault(HttpStatus.NOT_FOUND, exception.getMessage());
         } catch (Exception exception) {
-            logger.error("Failure while processing ReadContact SOAP request", exception);
+            logger.error("readContact() - Failure while processing ReadContact SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/SendToChecker")
     public ResponseEntity<String> sendToChecker(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received SendToChecker SOAP request");
+        logger.info("sendToChecker() - Received SendToChecker SOAP request");
         try {
             SoapSendToCheckerRequestEnvelope request = unmarshal(rawXmlRequestBody,
                     SoapSendToCheckerRequestEnvelope.class);
             if (request == null || request.getBody() == null || request.getBody().getSendToChecker() == null
                     || request.getBody().getSendToChecker().getObjMail() == null) {
-            logger.warn("Rejected SendToChecker request: missing objMail payload");
+                logger.warn("sendToChecker() - Rejected SendToChecker request: missing objMail payload");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing SendToChecker objMail payload");
             }
-            logger.info("Saving maker transfer for ContactID {} and AgentID {}",
+            logger.info("sendToChecker() - Saving maker transfer for ContactID {} and AgentID {}",
                 request.getBody().getSendToChecker().getObjMail().getContactId(),
                 request.getBody().getSendToChecker().getObjMail().getAgentId());
             makerTransferStatusService.saveMakerTransferDetails(
@@ -155,24 +172,24 @@ public class ContactSoapController {
             result.setMessage("Maker transfer details saved successfully");
             SoapSendToCheckerResponseEnvelope envelope = new SoapSendToCheckerResponseEnvelope();
             envelope.getBody().setSendToCheckerResponse(result);
-                logger.info("SendToChecker completed successfully with MailID {}",
-                    request.getBody().getSendToChecker().getObjMail().getMailId());
+            logger.info("sendToChecker() - SendToChecker completed successfully with MailID {}",
+                request.getBody().getSendToChecker().getObjMail().getMailId());
             return xmlResponse(marshal(envelope));
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid SendToChecker SOAP request", exception);
+            logger.warn("sendToChecker() - Rejected invalid SendToChecker SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid SendToChecker SOAP request");
         } catch (IllegalArgumentException exception) {
-            logger.warn("Rejected SendToChecker request: {}", exception.getMessage());
+            logger.warn("sendToChecker() - Rejected SendToChecker request: {}", exception.getMessage());
             return soapFault(HttpStatus.BAD_REQUEST, exception.getMessage());
         } catch (Exception exception) {
-            logger.error("Failure while processing SendToChecker SOAP request", exception);
+            logger.error("sendToChecker() - Failure while processing SendToChecker SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to save maker transfer details");
         }
     }
 
     @PostMapping("/SendMail")
     public ResponseEntity<String> sendMail(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received SendMail SOAP request");
+        logger.info("sendMail() - Received SendMail SOAP request");
         try {
             SoapSendMailRequestEnvelope requestEnvelope = unmarshal(rawXmlRequestBody,
                     SoapSendMailRequestEnvelope.class);
@@ -180,7 +197,7 @@ public class ContactSoapController {
             if (requestEnvelope == null || requestEnvelope.getBody() == null
                     || requestEnvelope.getBody().getSendMail() == null
                     || requestEnvelope.getBody().getSendMail().getObjMail() == null) {
-                logger.warn("Rejected SendMail request: missing objMail payload");
+                logger.warn("sendMail() - Rejected SendMail request: missing objMail payload");
                 return soapFault(HttpStatus.BAD_REQUEST,
                         "Invalid SOAP request: missing SendMail objMail payload");
             }
@@ -189,10 +206,10 @@ public class ContactSoapController {
 
             String toEmail = cleanEmailField(objMail.getToEmail());
             if (toEmail == null || toEmail.isEmpty()) {
-                logger.warn("Rejected SendMail request: ToEmail is required");
-                return sendMailResponse(0, "ToEmail is required");
+                logger.warn("sendMail() - Rejected SendMail request: ToEmail is required");
+                return sendMailResponse(1, "ToEmail is required");
             }
-            logger.info("Processing SendMail for ContactID: {}, Skillset: {}, ToEmail: {}",
+            logger.info("sendMail() - Processing SendMail for ContactID: {}, Skillset: {}, ToEmail: {}",
                     objMail.getContactId(), objMail.getSkillset(), toEmail);
 
             String fromEmail = cleanEmailField(objMail.getFromEmail());
@@ -236,9 +253,12 @@ public class ContactSoapController {
                 MimeMessage mimeMessage = dynamicMailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
-                String senderEmail = fromEmail;
-                if ((senderEmail == null || senderEmail.isEmpty()) && credential != null && credential.getFromEmail() != null && !credential.getFromEmail().trim().isEmpty()) {
+                // Prioritize the configured from_email from MailConfiguration
+                String senderEmail = null;
+                if (credential != null && credential.getFromEmail() != null && !credential.getFromEmail().trim().isEmpty()) {
                     senderEmail = credential.getFromEmail().trim();
+                } else if (fromEmail != null && !fromEmail.isEmpty()) {
+                    senderEmail = fromEmail;
                 }
 
                 String defaultUsername = (credential != null && credential.getUsername() != null && !credential.getUsername().trim().isEmpty())
@@ -259,6 +279,14 @@ public class ContactSoapController {
                     helper.setFrom("noreply@localhost");
                 }
 
+                // Update MailSendStatus with the actual resolved from_email
+                if (senderEmail != null && !senderEmail.isEmpty()) {
+                    mailSendStatus.setFromEmail(senderEmail);
+                }
+
+                logger.info("sendMail() - Using From email: {} for ContactID: {}, Skillset: {}",
+                        senderEmail, objMail.getContactId(), objMail.getSkillset());
+
                 helper.setTo(splitRecipients(toEmail));
                 if (ccEmail != null && !ccEmail.isEmpty()) {
                     helper.setCc(splitRecipients(ccEmail));
@@ -278,7 +306,7 @@ public class ContactSoapController {
                         if (file.exists() && file.isFile()) {
                             helper.addAttachment(file.getName(), file);
                         } else {
-                            logger.warn("Skipping attachment {} because file does not exist", attachmentFile);
+                            logger.warn("sendMail() - Skipping attachment {} because file does not exist", attachmentFile);
                         }
                     }
                 }
@@ -287,13 +315,13 @@ public class ContactSoapController {
 
                 mailSendStatus.setIsSent(true);
                 mailSendStatus.setRemarks("Mail sent successfully");
-                mailSendStatusRepository.save(mailSendStatus);
-                logger.info("Mail sent successfully to {} and recorded in MailSendStatus (MailID: {})",
+                mailSendStatusService.saveSentMailDetails(mailSendStatus, objMail);
+                logger.info("sendMail() - Mail sent successfully to {} and processed via MailSendStatusService (MailID: {})",
                         toEmail, mailSendStatus.getMailId());
 
-                return sendMailResponse(1, "Mail sent successfully");
+                return sendMailResponse(0, "Success");
             } catch (Exception sendEx) {
-                logger.error("Failure while sending SendMail via SMTP", sendEx);
+                logger.error("sendMail() - Failure while sending SendMail via SMTP", sendEx);
                 mailSendStatus.setIsSent(false);
                 String errorMsg = sendEx.getMessage() != null ? sendEx.getMessage() : sendEx.getClass().getSimpleName();
                 if (errorMsg.length() > 490) {
@@ -301,78 +329,100 @@ public class ContactSoapController {
                 }
                 mailSendStatus.setRemarks("Failed: " + errorMsg);
                 try {
-                    mailSendStatusRepository.save(mailSendStatus);
+                    mailSendStatusService.saveSentMailDetails(mailSendStatus, objMail);
                 } catch (Exception dbEx) {
-                    logger.error("Failed to record failed send status in MailSendStatus", dbEx);
+                    logger.error("sendMail() - Failed to record failed send status in MailSendStatus", dbEx);
                 }
-                return sendMailResponse(0, "Unable to send mail: " + errorMsg);
+                return sendMailResponse(1, "Error : " + errorMsg);
             }
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid SendMail SOAP request", exception);
+            logger.warn("sendMail() - Rejected invalid SendMail SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid SendMail SOAP request");
         } catch (Exception exception) {
-            logger.error("Failure while processing SendMail SOAP request", exception);
+            logger.error("sendMail() - Failure while processing SendMail SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/TransferContactToSkillset")
     public ResponseEntity<String> transferContactToSkillset(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received TransferContactToSkillset SOAP request");
+        logger.info("transferContactToSkillset() - Received TransferContactToSkillset SOAP request");
         try {
             TransferContactToSkillsetRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
                     TransferContactToSkillsetRequestEnvelope.class);
             if (envelope.getBody() == null || envelope.getBody().getTransferContactToSkillset() == null) {
-                logger.warn("Rejected TransferContactToSkillset request: missing payload");
+                logger.warn("transferContactToSkillset() - Rejected TransferContactToSkillset request: missing payload");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing TransferContactToSkillset payload");
             }
             TransferContactToSkillsetRequest request = envelope.getBody().getTransferContactToSkillset();
             if (request.getId() == null || request.getId().trim().isEmpty() || request.getSkillsetId() == null) {
-                logger.warn("Rejected TransferContactToSkillset request: id and skillsetId are required");
+                logger.warn("transferContactToSkillset() - Rejected TransferContactToSkillset request: id and skillsetId are required");
                 return soapFault(HttpStatus.BAD_REQUEST, "id and skillsetId are required");
             }
             long contactId = Long.parseLong(request.getId().trim());
-            logger.info("Transferring ContactID: {} to SkillsetID: {}", contactId, request.getSkillsetId());
+            logger.info("transferContactToSkillset() - Transferring ContactID: {} to SkillsetID: {}", contactId, request.getSkillsetId());
             TransferContactToSkillsetResponseEnvelope responseEnvelope = new TransferContactToSkillsetResponseEnvelope();
             responseEnvelope.getBody().setTransferContactToSkillsetResponse(
                     new TransferContactToSkillsetResult(
                             aaccContactService.transferToSkillset(contactId, request.getSkillsetId())));
-            logger.info("TransferContactToSkillset completed successfully for ContactID: {}, SkillsetID: {}",
+            logger.info("transferContactToSkillset() - TransferContactToSkillset completed successfully for ContactID: {}, SkillsetID: {}",
                     contactId, request.getSkillsetId());
             return xmlResponse(marshal(responseEnvelope));
         } catch (ContactNotFoundException exception) {
-            logger.warn("TransferContactToSkillset contact not found: {}", exception.getMessage());
+            logger.warn("transferContactToSkillset() - TransferContactToSkillset contact not found: {}", exception.getMessage());
             return soapFault(HttpStatus.NOT_FOUND, exception.getMessage());
         } catch (NumberFormatException exception) {
-            logger.warn("TransferContactToSkillset invalid contact id: {}", exception.getMessage());
+            logger.warn("transferContactToSkillset() - TransferContactToSkillset invalid contact id: {}", exception.getMessage());
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid contact id format");
         } catch (IllegalArgumentException exception) {
-            logger.warn("TransferContactToSkillset illegal argument: {}", exception.getMessage());
+            logger.warn("transferContactToSkillset() - TransferContactToSkillset illegal argument: {}", exception.getMessage());
             return soapFault(HttpStatus.BAD_REQUEST, exception.getMessage());
         } catch (Exception exception) {
-            logger.error("Failure while processing TransferContactToSkillset SOAP request", exception);
+            logger.error("transferContactToSkillset() - Failure while processing TransferContactToSkillset SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to transfer contact to skillset");
         }
     }
 
     @PostMapping("/GetAllSkillsets")
-    public ResponseEntity<String> getAllSkillsets(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received GetAllSkillsets SOAP request");
+    public ResponseEntity<String> getAllSkillsets(
+            @RequestParam(value = "skillsetName", required = false) String paramSkillsetName,
+            @RequestParam(value = "skillName", required = false) String paramSkillName,
+            @RequestParam(value = "name", required = false) String paramName,
+            @RequestBody String rawXmlRequestBody) {
+        logger.info("getAllSkillsets() - Received GetAllSkillsets SOAP request");
         try {
             SoapRequestEnvelope request = unmarshal(rawXmlRequestBody, SoapRequestEnvelope.class);
             if (request.getBody() == null || request.getBody().getGetAllSkillsets() == null) {
-                logger.warn("Rejected GetAllSkillsets request: missing GetAllSkillsets element");
+                logger.warn("getAllSkillsets() - Rejected GetAllSkillsets request: missing GetAllSkillsets element");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing GetAllSkillsets element");
             }
 
-            List<SkillMaster> skillMasters = skillMasterRepo.findAll();
-            GetAllSkillsetsResult result = new GetAllSkillsetsResult();
-            for (SkillMaster skillMaster : skillMasters) {
-                AWSkillset skillset = new AWSkillset();
-                skillset.setId(skillMaster.getId());
-                skillset.setName(skillMaster.getName());
-                result.getAwsSkillsets().add(skillset);
+            String skillsetName = null;
+            if (paramSkillsetName != null && !paramSkillsetName.trim().isEmpty()) {
+                skillsetName = paramSkillsetName.trim();
+            } else if (paramSkillName != null && !paramSkillName.trim().isEmpty()) {
+                skillsetName = paramSkillName.trim();
+            } else if (paramName != null && !paramName.trim().isEmpty()) {
+                skillsetName = paramName.trim();
+            } else if (request.getBody().getGetAllSkillsets() != null) {
+                skillsetName = request.getBody().getGetAllSkillsets().getEffectiveSkillsetName();
             }
+
+            if (skillsetName == null && rawXmlRequestBody != null) {
+                skillsetName = extractXmlTag(rawXmlRequestBody, "skillsetName");
+                if (skillsetName == null) {
+                    skillsetName = extractXmlTag(rawXmlRequestBody, "skillName");
+                }
+                if (skillsetName == null) {
+                    skillsetName = extractXmlTag(rawXmlRequestBody, "name");
+                }
+            }
+
+            logger.info("getAllSkillsets() - Executing GetAllSkillsets for skillsetName: {}", skillsetName);
+            List<AWSkillset> skillsets = aaccContactService.getAllSkillsets(skillsetName);
+
+            GetAllSkillsetsResult result = new GetAllSkillsetsResult();
+            result.getAwsSkillsets().addAll(skillsets);
 
             GetAllSkillsetsResponse response = new GetAllSkillsetsResponse();
             response.setGetAllSkillsetsResult(result);
@@ -382,24 +432,24 @@ public class ContactSoapController {
 
             SoapResponseEnvelope envelope = new SoapResponseEnvelope();
             envelope.setBody(body);
-            logger.info("GetAllSkillsets completed successfully returning {} skillsets", skillMasters.size());
+            logger.info("getAllSkillsets() - GetAllSkillsets completed successfully returning {} skillsets", skillsets.size());
             return xmlResponse(marshal(envelope));
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid GetAllSkillsets SOAP request", exception);
+            logger.warn("getAllSkillsets() - Rejected invalid GetAllSkillsets SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetAllSkillsets SOAP request");
         } catch (Exception exception) {
-            logger.error("Failure while processing GetAllSkillsets SOAP request", exception);
+            logger.error("getAllSkillsets() - Failure while processing GetAllSkillsets SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/GetAllClosedReasonCodes")
     public ResponseEntity<String> getAllClosedReasonCodes(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received GetAllClosedReasonCodes SOAP request");
+        logger.info("getAllClosedReasonCodes() - Received GetAllClosedReasonCodes SOAP request");
         try {
             SoapRequestEnvelope request = unmarshal(rawXmlRequestBody, SoapRequestEnvelope.class);
             if (request.getBody() == null || request.getBody().getGetAllClosedReasonCodes() == null) {
-                logger.warn("Rejected GetAllClosedReasonCodes request: missing GetAllClosedReasonCodes element");
+                logger.warn("getAllClosedReasonCodes() - Rejected GetAllClosedReasonCodes request: missing GetAllClosedReasonCodes element");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing GetAllClosedReasonCodes element");
             }
             GetAllClosedReasonCodesResult result = new GetAllClosedReasonCodesResult();
@@ -410,26 +460,26 @@ public class ContactSoapController {
             body.setGetAllClosedReasonCodesResponse(response);
             SoapResponseEnvelope envelope = new SoapResponseEnvelope();
             envelope.setBody(body);
-            logger.info("GetAllClosedReasonCodes completed successfully returning {} codes",
+            logger.info("getAllClosedReasonCodes() - GetAllClosedReasonCodes completed successfully returning {} codes",
                     result.getAwClosedReasonCodes().size());
             return xmlResponse(marshal(envelope));
         } catch (Exception exception) {
-            logger.error("Failure while processing GetAllClosedReasonCodes SOAP request", exception);
+            logger.error("getAllClosedReasonCodes() - Failure while processing GetAllClosedReasonCodes SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/GetHistoryFromAACC")
     public ResponseEntity<String> getHistoryFromAACC(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received GetHistoryFromAACC SOAP request");
+        logger.info("getHistoryFromAACC() - Received GetHistoryFromAACC SOAP request");
         try {
             SoapHistoryRequestEnvelope request = unmarshal(rawXmlRequestBody, SoapHistoryRequestEnvelope.class);
             if (request.getBody() == null || request.getBody().getGetHistoryFromAACC() == null) {
-                logger.warn("Rejected GetHistoryFromAACC request: missing GetHistoryFromAACC element");
+                logger.warn("getHistoryFromAACC() - Rejected GetHistoryFromAACC request: missing GetHistoryFromAACC element");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing GetHistoryFromAACC element");
             }
             GetHistoryFromAACCRequest input = request.getBody().getGetHistoryFromAACC();
-            logger.info("Fetching history from AACC [SearchType: {}, SearchValue: {}]", input.getSearchType(), input.getSearchValue());
+            logger.info("getHistoryFromAACC() - Fetching history from AACC [SearchType: {}, SearchValue: {}]", input.getSearchType(), input.getSearchValue());
             GetHistoryFromAACCResponse response = new GetHistoryFromAACCResponse();
             response.setGetHistoryFromAACCResult(aaccContactService.getHistory(
                     input.getSearchType(), input.getSearchValue()));
@@ -437,50 +487,50 @@ public class ContactSoapController {
             body.setGetHistoryFromAACCResponse(response);
             SoapHistoryResponseEnvelope envelope = new SoapHistoryResponseEnvelope();
             envelope.setBody(body);
-            logger.info("GetHistoryFromAACC completed successfully for SearchValue: {}", input.getSearchValue());
+            logger.info("getHistoryFromAACC() - GetHistoryFromAACC completed successfully for SearchValue: {}", input.getSearchValue());
             return xmlResponse(marshal(envelope));
         } catch (Exception exception) {
-            logger.error("Failure while processing GetHistoryFromAACC SOAP request", exception);
+            logger.error("getHistoryFromAACC() - Failure while processing GetHistoryFromAACC SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/GetHistoryForContactID")
     public ResponseEntity<String> getHistoryForContactId(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received GetHistoryForContactID SOAP request");
+        logger.info("getHistoryForContactId() - Received GetHistoryForContactID SOAP request");
         try {
             HistoryForContactIdRequestEnvelope request = unmarshal(
                     rawXmlRequestBody, HistoryForContactIdRequestEnvelope.class);
             if (request.getBody() == null || request.getBody().getRequest() == null
                     || request.getBody().getRequest().getContactId() == null
                     || request.getBody().getRequest().getContactId().trim().isEmpty()) {
-                logger.warn("Rejected GetHistoryForContactID request: contactID is required");
+                logger.warn("getHistoryForContactId() - Rejected GetHistoryForContactID request: contactID is required");
                 return soapFault(HttpStatus.BAD_REQUEST, "contactID is required");
             }
 
             String contactId = request.getBody().getRequest().getContactId().trim();
-            logger.info("Fetching history for ContactID: {}", contactId);
+            logger.info("getHistoryForContactId() - Fetching history for ContactID: {}", contactId);
             HistoryForContactIdResponseEnvelope response = new HistoryForContactIdResponseEnvelope();
             response.getBody().getResponse().setResult(
                     aaccContactService.getHistoryForContactId(contactId));
-            logger.info("GetHistoryForContactID completed successfully for ContactID: {}", contactId);
+            logger.info("getHistoryForContactId() - GetHistoryForContactID completed successfully for ContactID: {}", contactId);
             return xmlResponse(marshal(response));
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid GetHistoryForContactID SOAP request", exception);
+            logger.warn("getHistoryForContactId() - Rejected invalid GetHistoryForContactID SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetHistoryForContactID SOAP request");
         } catch (Exception exception) {
-            logger.error("Failure while processing GetHistoryForContactID SOAP request", exception);
+            logger.error("getHistoryForContactId() - Failure while processing GetHistoryForContactID SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve contact history");
         }
     }
 
     @PostMapping("/getContact")
     public ResponseEntity<String> getContact(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received getContact SOAP request");
+        logger.info("getContact() - Received getContact SOAP request");
         try {
             SoapContactRequestEnvelope request = unmarshal(rawXmlRequestBody, SoapContactRequestEnvelope.class);
             Long agentId = request.getBody().getGetContact().getStrAgentID();
-            logger.info("Assigning next pending email for AgentID: {}", agentId);
+            logger.info("getContact() - Assigning next pending email for AgentID: {}", agentId);
             Long contactId = emailDisplayService.assignNextPendingEmail(agentId);
             GetContactResult result = new GetContactResult();
             result.setContactId(contactId == null ? 0L : contactId);
@@ -491,26 +541,26 @@ public class ContactSoapController {
             body.setGetContactResponse(response);
             SoapContactResponseEnvelope envelope = new SoapContactResponseEnvelope();
             envelope.setBody(body);
-            logger.info("getContact completed for AgentID: {}, assigned ContactID: {}", agentId, contactId);
+            logger.info("getContact() - getContact completed for AgentID: {}, assigned ContactID: {}", agentId, contactId);
             return xmlResponse(marshal(envelope));
         } catch (Exception exception) {
-            logger.error("Failure while processing GetContact SOAP request", exception);
+            logger.error("getContact() - Failure while processing GetContact SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/CloseContact")
     public ResponseEntity<String> closeContact(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received CloseContact SOAP request");
+        logger.info("closeContact() - Received CloseContact SOAP request");
         try {
             SoapRequestEnvelope requestEnvelope = unmarshal(rawXmlRequestBody, SoapRequestEnvelope.class);
             if (requestEnvelope.getBody() == null || requestEnvelope.getBody().getCloseContact() == null) {
-                logger.warn("Rejected CloseContact request: missing CloseContact element");
+                logger.warn("closeContact() - Rejected CloseContact request: missing CloseContact element");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: missing CloseContact element");
             }
             CloseContactRequest request = requestEnvelope.getBody().getCloseContact();
             long contactId = Long.parseUnsignedLong(request.getId());
-            logger.info("Closing ContactID: {}, ReasonCode: {}", contactId, request.getClosedReasonCodeValue());
+            logger.info("closeContact() - Closing ContactID: {}, ReasonCode: {}", contactId, request.getClosedReasonCodeValue());
             long actionId = aaccContactService.closeContact(contactId, request.getClosureText(),
                     request.getClosedReasonCodeValue(), request.getClosedReasonCodeSpecified());
             CloseContactResponse response = new CloseContactResponse();
@@ -519,28 +569,28 @@ public class ContactSoapController {
             body.setCloseContactResponse(response);
             SoapResponseEnvelope envelope = new SoapResponseEnvelope();
             envelope.setBody(body);
-            logger.info("CloseContact completed successfully for ContactID: {}, ActionID: {}", contactId, actionId);
+            logger.info("closeContact() - CloseContact completed successfully for ContactID: {}, ActionID: {}", contactId, actionId);
             return xmlResponse(marshal(envelope));
         } catch (ContactNotFoundException exception) {
-            logger.warn("CloseContact contact not found: {}", exception.getMessage());
+            logger.warn("closeContact() - CloseContact contact not found: {}", exception.getMessage());
             return soapFault(HttpStatus.NOT_FOUND, exception.getMessage());
         } catch (NumberFormatException exception) {
-            logger.warn("CloseContact invalid contact id: {}", exception.getMessage());
+            logger.warn("closeContact() - CloseContact invalid contact id: {}", exception.getMessage());
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid contact id format");
         } catch (Exception exception) {
-            logger.error("Failure while processing CloseContact SOAP request", exception);
+            logger.error("closeContact() - Failure while processing CloseContact SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping("/customerMail")
     public ResponseEntity<String> getCustomerMail(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received customerMail SOAP request");
+        logger.info("getCustomerMail() - Received customerMail SOAP request");
         try {
             SoapCustomerMailRequestEnvelope requestEnvelope = unmarshal(
                     rawXmlRequestBody, SoapCustomerMailRequestEnvelope.class);
             if (requestEnvelope == null || requestEnvelope.getBody() == null) {
-                logger.warn("Rejected customerMail request: SOAP Body is required");
+                logger.warn("getCustomerMail() - Rejected customerMail request: SOAP Body is required");
                 return soapFault(HttpStatus.BAD_REQUEST, "SOAP Body is required");
             }
             CustomerMailRequest request;
@@ -552,18 +602,18 @@ public class ContactSoapController {
                 request = requestEnvelope.getBody().getGetCustomerMailforChecker();
                 makerOperation = false;
             } else {
-                logger.warn("Rejected customerMail request: GetCustomerMailforMaker or GetCustomerMailforChecker is required");
+                logger.warn("getCustomerMail() - Rejected customerMail request: GetCustomerMailforMaker or GetCustomerMailforChecker is required");
                 return soapFault(HttpStatus.BAD_REQUEST,
                         "GetCustomerMailforMaker or GetCustomerMailforChecker is required");
             }
             if (request.getContactId() == null || request.getContactId().trim().isEmpty()) {
-                logger.warn("Rejected customerMail request: ContactID is required");
+                logger.warn("getCustomerMail() - Rejected customerMail request: ContactID is required");
                 return soapFault(HttpStatus.BAD_REQUEST, "ContactID is required");
             }
 
             String operation = makerOperation ? "GetCustomerMailforMaker" : "GetCustomerMailforChecker";
             String contactId = request.getContactId().trim();
-            logger.info("Processing {} for ContactID: {}", operation, contactId);
+            logger.info("getCustomerMail() - Processing {} for ContactID: {}", operation, contactId);
 
             CustomerMailForReplyDTO mail = makerOperation
                     ? customerMailService.getCustomerMailforMaker(contactId)
@@ -609,97 +659,463 @@ public class ContactSoapController {
                     });
             StringWriter writer = new StringWriter();
             marshaller.marshal(responseEnvelope, writer);
-            logger.info("{} completed successfully for ContactID: {}", operation, contactId);
+            logger.info("getCustomerMail() - {} completed successfully for ContactID: {}", operation, contactId);
             return xmlResponse(writer.toString());
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid GetCustomerMail SOAP request", exception);
+            logger.warn("getCustomerMail() - Rejected invalid GetCustomerMail SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetCustomerMail SOAP request");
         } catch (ContactNotFoundException exception) {
-            logger.warn("GetCustomerMail contact not found: {}", exception.getMessage());
+            logger.warn("getCustomerMail() - GetCustomerMail contact not found: {}", exception.getMessage());
             return soapFault(HttpStatus.NOT_FOUND, exception.getMessage());
         } catch (Exception exception) {
-            logger.error("Failure while processing GetCustomerMail SOAP request", exception);
+            logger.error("getCustomerMail() - Failure while processing GetCustomerMail SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Unable to retrieve customer mail");
         }
     }
 
     @PostMapping(value = "/UpdateAuxDetails")
     public ResponseEntity<String> updateAuxDetails(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received UpdateAuxDetails SOAP request");
+        logger.info("updateAuxDetails() - Received UpdateAuxDetails SOAP request");
         try {
-            UpdateAuxDetailsRequest request = unmarshal(rawXmlRequestBody, UpdateAuxDetailsRequest.class);
+            UpdateAuxDetailsRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapUpdateAuxDetailsRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapUpdateAuxDetailsRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getUpdateAuxDetails() != null) {
+                    request = envelope.getBody().getUpdateAuxDetails();
+                }
+            } catch (Exception ex) {
+                logger.debug("updateAuxDetails() - JAXB demarshalling as SoapUpdateAuxDetailsRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback demarshalling for direct UpdateAuxDetails element
             if (request == null || request.getAgentID() == null || request.getAgentID().trim().isEmpty()) {
-                logger.warn("Rejected UpdateAuxDetails request: AgentID is required");
+                try {
+                    request = unmarshal(rawXmlRequestBody, UpdateAuxDetailsRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction if needed
+            if (request == null || request.getAgentID() == null || request.getAgentID().trim().isEmpty()) {
+                String agentId = extractXmlTag(rawXmlRequestBody, "AgentID");
+                if (agentId == null) {
+                    agentId = extractXmlTag(rawXmlRequestBody, "agentID");
+                }
+                if (agentId != null && !agentId.trim().isEmpty()) {
+                    if (request == null) {
+                        request = new UpdateAuxDetailsRequest();
+                    }
+                    request.setAgentID(agentId.trim());
+
+                    String auxCode = extractXmlTag(rawXmlRequestBody, "AuxCode");
+                    if (auxCode == null) auxCode = extractXmlTag(rawXmlRequestBody, "auxCode");
+                    request.setAuxCode(auxCode);
+
+                    String startTime = extractXmlTag(rawXmlRequestBody, "StartTime");
+                    if (startTime == null) startTime = extractXmlTag(rawXmlRequestBody, "startTime");
+                    request.setStartTime(startTime);
+
+                    String endTime = extractXmlTag(rawXmlRequestBody, "EndTime");
+                    if (endTime == null) endTime = extractXmlTag(rawXmlRequestBody, "endTime");
+                    request.setEndTime(endTime);
+                }
+            }
+
+            if (request == null || request.getAgentID() == null || request.getAgentID().trim().isEmpty()) {
+                logger.warn("updateAuxDetails() - Rejected UpdateAuxDetails request: AgentID is required");
                 return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: AgentID is required");
             }
 
             String agentId = request.getAgentID().trim();
-            logger.info("Processing UpdateAuxDetails for AgentID: {}, AuxCode: {}", agentId, request.getAuxCode());
+            logger.info("updateAuxDetails() - Processing UpdateAuxDetails for AgentID: {}, AuxCode: {}", agentId, request.getAuxCode());
             UpdateAuxDetailsResponse response = updateAuxDetailsService.updateAuxDetails(request);
-            logger.info("UpdateAuxDetails completed successfully for AgentID: {}", agentId);
-            return xmlResponse(marshal(response));
+            logger.info("updateAuxDetails() - UpdateAuxDetails completed successfully for AgentID: {}", agentId);
+
+            // JAXB Marshalling of response envelope
+            SoapUpdateAuxDetailsResponseEnvelope responseEnvelope = new SoapUpdateAuxDetailsResponseEnvelope(
+                    new SoapUpdateAuxDetailsResponseBody(response)
+            );
+            return xmlResponse(marshal(responseEnvelope));
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid UpdateAuxDetails SOAP request", exception);
+            logger.warn("updateAuxDetails() - Rejected invalid UpdateAuxDetails SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid UpdateAuxDetails SOAP request");
         } catch (Exception exception) {
-            logger.error("Failure while processing UpdateAuxDetails SOAP request", exception);
+            logger.error("updateAuxDetails() - Failure while processing UpdateAuxDetails SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping(value = "/DeleteAgentSessionKey")
     public ResponseEntity<String> deleteAgentSessionKey(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received DeleteAgentSessionKey SOAP request");
+        logger.info("deleteAgentSessionKey() - Received DeleteAgentSessionKey SOAP request");
         try {
-            DeleteAgentSessionKeyRequest request = unmarshal(rawXmlRequestBody, DeleteAgentSessionKeyRequest.class);
+            DeleteAgentSessionKeyRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapDeleteAgentSessionKeyRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapDeleteAgentSessionKeyRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getDeleteAgentSessionKey() != null) {
+                    request = envelope.getBody().getDeleteAgentSessionKey();
+                }
+            } catch (Exception ex) {
+                logger.debug("deleteAgentSessionKey() - JAXB demarshalling as SoapDeleteAgentSessionKeyRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback direct demarshalling
+            if (request == null || request.getStrAvayaAgentID() == null || request.getStrAvayaAgentID().trim().isEmpty()) {
+                try {
+                    request = unmarshal(rawXmlRequestBody, DeleteAgentSessionKeyRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction
+            if (request == null || request.getStrAvayaAgentID() == null || request.getStrAvayaAgentID().trim().isEmpty()) {
+                String agentId = extractXmlTag(rawXmlRequestBody, "strAvayaAgentID");
+                if (agentId == null) {
+                    agentId = extractXmlTag(rawXmlRequestBody, "agentloginId");
+                }
+                String sessionKey = extractXmlTag(rawXmlRequestBody, "strSessionKey");
+                if (sessionKey == null) {
+                    sessionKey = extractXmlTag(rawXmlRequestBody, "agentsessionid");
+                }
+                if (agentId != null && !agentId.trim().isEmpty()) {
+                    if (request == null) {
+                        request = new DeleteAgentSessionKeyRequest();
+                    }
+                    request.setStrAvayaAgentID(agentId.trim());
+                    request.setStrSessionKey(sessionKey != null ? sessionKey.trim() : "");
+                }
+            }
+
             if (request == null || request.getStrAvayaAgentID() == null
                     || request.getStrAvayaAgentID().trim().isEmpty()
                     || request.getStrSessionKey() == null || request.getStrSessionKey().trim().isEmpty()) {
-                logger.warn("Rejected DeleteAgentSessionKey request: strAvayaAgentID and strSessionKey are required");
+                logger.warn("deleteAgentSessionKey() - Rejected DeleteAgentSessionKey request: strAvayaAgentID and strSessionKey are required");
                 return soapFault(HttpStatus.BAD_REQUEST,
                         "Invalid SOAP request: strAvayaAgentID and strSessionKey are required");
             }
 
             String agentId = request.getStrAvayaAgentID().trim();
-            logger.info("Processing DeleteAgentSessionKey for AgentID: {}", agentId);
+            logger.info("deleteAgentSessionKey() - Processing DeleteAgentSessionKey for AgentID: {}", agentId);
             DeleteAgentSessionKeyResponse response = deleteAgentSessionKeyService.deleteAgentSessionKey(request);
-            logger.info("DeleteAgentSessionKey completed successfully for AgentID: {}", agentId);
-            return xmlResponse(marshal(response));
+            logger.info("deleteAgentSessionKey() - DeleteAgentSessionKey completed successfully for AgentID: {}", agentId);
+
+            // JAXB Marshalling of response envelope
+            SoapDeleteAgentSessionKeyResponseEnvelope responseEnvelope = new SoapDeleteAgentSessionKeyResponseEnvelope(
+                    new SoapDeleteAgentSessionKeyResponseBody(response)
+            );
+            return xmlResponse(marshal(responseEnvelope));
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid DeleteAgentSessionKey SOAP request", exception);
+            logger.warn("deleteAgentSessionKey() - Rejected invalid DeleteAgentSessionKey SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid DeleteAgentSessionKey SOAP request");
         } catch (Exception exception) {
-            logger.error("Failure while processing DeleteAgentSessionKey SOAP request", exception);
+            logger.error("deleteAgentSessionKey() - Failure while processing DeleteAgentSessionKey SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
 
     @PostMapping(value = "/GetAgentSessionKey")
     public ResponseEntity<String> getAgentSessionKey(@RequestBody String rawXmlRequestBody) {
-        logger.info("Received GetAgentSessionKey SOAP request");
+        logger.info("getAgentSessionKey() - Received GetAgentSessionKey SOAP request");
         try {
-            GetAgentSessionKeyRequest request = unmarshal(rawXmlRequestBody, GetAgentSessionKeyRequest.class);
+            GetAgentSessionKeyRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapGetAgentSessionKeyRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapGetAgentSessionKeyRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getGetAgentSessionKey() != null) {
+                    request = envelope.getBody().getGetAgentSessionKey();
+                }
+            } catch (Exception ex) {
+                logger.debug("getAgentSessionKey() - JAXB demarshalling as SoapGetAgentSessionKeyRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback direct demarshalling
+            if (request == null || request.getStrAvayaAgentID() == null || request.getStrAvayaAgentID().trim().isEmpty()) {
+                try {
+                    request = unmarshal(rawXmlRequestBody, GetAgentSessionKeyRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction
+            if (request == null || request.getStrAvayaAgentID() == null || request.getStrAvayaAgentID().trim().isEmpty()) {
+                String agentId = extractXmlTag(rawXmlRequestBody, "strAvayaAgentID");
+                if (agentId == null) {
+                    agentId = extractXmlTag(rawXmlRequestBody, "AgentID");
+                }
+                String sessionKey = extractXmlTag(rawXmlRequestBody, "strSessionKey");
+                if (sessionKey == null) {
+                    sessionKey = extractXmlTag(rawXmlRequestBody, "sessionKey");
+                }
+                if (agentId != null && !agentId.trim().isEmpty()) {
+                    if (request == null) {
+                        request = new GetAgentSessionKeyRequest();
+                    }
+                    request.setStrAvayaAgentID(agentId.trim());
+                    request.setStrSessionKey(sessionKey != null ? sessionKey.trim() : "");
+                }
+            }
+
             if (request == null || request.getStrAvayaAgentID() == null
                     || request.getStrAvayaAgentID().trim().isEmpty()
                     || request.getStrSessionKey() == null || request.getStrSessionKey().trim().isEmpty()) {
-                logger.warn("Rejected GetAgentSessionKey request: strAvayaAgentID and strSessionKey are required");
+                logger.warn("getAgentSessionKey() - Rejected GetAgentSessionKey request: strAvayaAgentID and strSessionKey are required");
                 return soapFault(HttpStatus.BAD_REQUEST,
                         "Invalid SOAP request: strAvayaAgentID and strSessionKey are required");
             }
 
             String agentId = request.getStrAvayaAgentID().trim();
-            logger.info("Processing GetAgentSessionKey for AgentID: {}", agentId);
+            logger.info("getAgentSessionKey() - Processing GetAgentSessionKey for AgentID: {}", agentId);
             GetAgentSessionKeyResponse response = getAgentSessionKeyService.getAgentSessionKey(request);
-            logger.info("GetAgentSessionKey completed successfully for AgentID: {}", agentId);
-            return xmlResponse(marshal(response));
+            logger.info("getAgentSessionKey() - GetAgentSessionKey completed successfully for AgentID: {}", agentId);
+
+            // JAXB Marshalling of response envelope
+            SoapGetAgentSessionKeyResponseEnvelope responseEnvelope = new SoapGetAgentSessionKeyResponseEnvelope(
+                    new SoapGetAgentSessionKeyResponseBody(response)
+            );
+            return xmlResponse(marshal(responseEnvelope));
         } catch (JAXBException exception) {
-            logger.warn("Rejected invalid GetAgentSessionKey SOAP request", exception);
+            logger.warn("getAgentSessionKey() - Rejected invalid GetAgentSessionKey SOAP request", exception);
             return soapFault(HttpStatus.BAD_REQUEST, "Invalid GetAgentSessionKey SOAP request");
         } catch (Exception exception) {
-            logger.error("Failure while processing GetAgentSessionKey SOAP request", exception);
+            logger.error("getAgentSessionKey() - Failure while processing GetAgentSessionKey SOAP request", exception);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
         }
     }
+
+
+    @PostMapping(value = "/UpdateAgentContact")
+    public ResponseEntity<String> updateAgentContact(@RequestBody String rawXmlRequestBody) {
+        logger.info("updateAgentContact() - Received UpdateAgentContact SOAP request");
+        try {
+            UpdateAgentContactRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapUpdateAgentContactRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapUpdateAgentContactRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getUpdateAgentContact() != null) {
+                    request = envelope.getBody().getUpdateAgentContact();
+                }
+            } catch (Exception ex) {
+                logger.debug("updateAgentContact() - JAXB demarshalling as SoapUpdateAgentContactRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback direct demarshalling
+            if (request == null || request.getStrAgentID() == null || request.getStrAgentID().trim().isEmpty()) {
+                try {
+                    request = unmarshal(rawXmlRequestBody, UpdateAgentContactRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction
+            if (request == null || request.getStrAgentID() == null || request.getStrAgentID().trim().isEmpty()) {
+                String agentId = extractXmlTag(rawXmlRequestBody, "strAgentID");
+                if (agentId == null) {
+                    agentId = extractXmlTag(rawXmlRequestBody, "AgentID");
+                }
+                if (agentId != null && !agentId.trim().isEmpty()) {
+                    if (request == null) {
+                        request = new UpdateAgentContactRequest();
+                    }
+                    request.setStrAgentID(cleanCdata(agentId.trim()));
+                }
+            }
+
+            if (request == null || request.getStrAgentID() == null || request.getStrAgentID().trim().isEmpty()) {
+                logger.warn("updateAgentContact() - Rejected UpdateAgentContact request: strAgentID is required");
+                return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: strAgentID is required");
+            }
+
+            String agentId = cleanCdata(request.getStrAgentID().trim());
+            request.setStrAgentID(agentId);
+            logger.info("updateAgentContact() - Processing UpdateAgentContact for agentID: {}", agentId);
+
+            UpdateAgentContactResponse objResult = updateAgentContactService.updateAgentContact(request);
+            logger.info("updateAgentContact() - UpdateAgentContact completed for agentID: {}", agentId);
+
+            SoapUpdateAgentContactResponseEnvelope responseEnvelope = new SoapUpdateAgentContactResponseEnvelope(
+                    new SoapUpdateAgentContactResponseBody(objResult)
+            );
+            return xmlResponse(marshal(responseEnvelope));
+        } catch (JAXBException exception) {
+            logger.warn("updateAgentContact() - Rejected invalid UpdateAgentContact SOAP request", exception);
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid UpdateAgentContact SOAP request");
+        } catch (Exception exception) {
+            logger.error("updateAgentContact() - Failure while processing UpdateAgentContact SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
+    @PostMapping(value = "/UploadAttachment")
+    public ResponseEntity<String> uploadAttachment(@RequestBody String rawXmlRequestBody) {
+        logger.info("uploadAttachment() - Received UploadAttachment SOAP request");
+        try {
+            UploadAttachmentRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapUploadAttachmentRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapUploadAttachmentRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getUploadAttachment() != null) {
+                    request = envelope.getBody().getUploadAttachment();
+                }
+            } catch (Exception ex) {
+                logger.debug("uploadAttachment() - JAXB demarshalling as SoapUploadAttachmentRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback direct demarshalling
+            if (request == null || request.getStrFileName() == null || request.getStrFileName().trim().isEmpty()) {
+                try {
+                    request = unmarshal(rawXmlRequestBody, UploadAttachmentRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction
+            if (request == null || request.getStrFileName() == null || request.getStrFileName().trim().isEmpty() || request.getStrContent() == null) {
+                String fileName = cleanCdata(extractXmlTag(rawXmlRequestBody, "strFileName"));
+                if (fileName == null) {
+                    fileName = cleanCdata(extractXmlTag(rawXmlRequestBody, "StrFileName"));
+                }
+                String logicalPath = cleanCdata(extractXmlTag(rawXmlRequestBody, "strLogicalPath"));
+                if (logicalPath == null) {
+                    logicalPath = cleanCdata(extractXmlTag(rawXmlRequestBody, "StrLogicalPath"));
+                }
+                String contentStr = cleanCdata(extractXmlTag(rawXmlRequestBody, "strContent"));
+                if (contentStr == null) {
+                    contentStr = cleanCdata(extractXmlTag(rawXmlRequestBody, "StrContent"));
+                }
+
+                if (request == null) {
+                    request = new UploadAttachmentRequest();
+                }
+                if (fileName != null) {
+                    request.setStrFileName(fileName);
+                }
+                if (logicalPath != null) {
+                    request.setStrLogicalPath(logicalPath);
+                }
+                if (contentStr != null && request.getStrContent() == null) {
+                    try {
+                        request.setStrContent(java.util.Base64.getDecoder().decode(contentStr.trim().replaceAll("\\s+", "")));
+                    } catch (Exception e) {
+                        request.setStrContent(contentStr.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                    }
+                }
+            }
+
+            if (request == null || request.getStrFileName() == null || request.getStrFileName().trim().isEmpty()) {
+                logger.warn("uploadAttachment() - Rejected UploadAttachment request: strFileName is required");
+                return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: strFileName is required");
+            }
+
+            request.setStrFileName(cleanCdata(request.getStrFileName()));
+            if (request.getStrLogicalPath() != null) {
+                request.setStrLogicalPath(cleanCdata(request.getStrLogicalPath()));
+            }
+
+            String fileName = request.getStrFileName();
+            logger.info("uploadAttachment() - Processing UploadAttachment with fileName: {}", fileName);
+
+            UploadAttachmentResponse objResult = uploadAttachmentService.uploadAttachment(request);
+            logger.info("uploadAttachment() - Completed UploadAttachment for fileName: {}", fileName);
+
+            SoapUploadAttachmentResponseEnvelope responseEnvelope = new SoapUploadAttachmentResponseEnvelope(
+                    new SoapUploadAttachmentResponseBody(objResult)
+            );
+            return xmlResponse(marshal(responseEnvelope));
+        } catch (JAXBException exception) {
+            logger.warn("uploadAttachment() - Rejected invalid UploadAttachment SOAP request", exception);
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid UploadAttachment SOAP request");
+        } catch (Exception exception) {
+            logger.error("uploadAttachment() - Failure while processing UploadAttachment SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
+    @PostMapping(value = "/DeleteAttachmentFile")
+    public ResponseEntity<String> deleteAttachmentFile(@RequestBody String rawXmlRequestBody) {
+        logger.info("deleteAttachmentFile() - Received DeleteAttachmentFile SOAP request");
+        try {
+            DeleteAttachmentFileRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapDeleteAttachmentFileRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapDeleteAttachmentFileRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getDeleteAttachmentFile() != null) {
+                    request = envelope.getBody().getDeleteAttachmentFile();
+                }
+            } catch (Exception ex) {
+                logger.debug("deleteAttachmentFile() - JAXB demarshalling as SoapDeleteAttachmentFileRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback direct demarshalling
+            if (request == null || request.getStrFileName() == null || request.getStrFileName().trim().isEmpty()) {
+                try {
+                    request = unmarshal(rawXmlRequestBody, DeleteAttachmentFileRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction
+            if (request == null || request.getStrFileName() == null || request.getStrFileName().trim().isEmpty()) {
+                String fileName = cleanCdata(extractXmlTag(rawXmlRequestBody, "strFileName"));
+                if (fileName == null) {
+                    fileName = cleanCdata(extractXmlTag(rawXmlRequestBody, "StrFileName"));
+                }
+                String logicalPath = cleanCdata(extractXmlTag(rawXmlRequestBody, "strLogicalPath"));
+                if (logicalPath == null) {
+                    logicalPath = cleanCdata(extractXmlTag(rawXmlRequestBody, "StrLogicalPath"));
+                }
+                if (fileName != null && !fileName.trim().isEmpty()) {
+                    if (request == null) {
+                        request = new DeleteAttachmentFileRequest();
+                    }
+                    request.setStrFileName(fileName.trim());
+                    request.setStrLogicalPath(logicalPath != null ? logicalPath.trim() : "");
+                }
+            }
+
+            if (request == null || request.getStrFileName() == null || request.getStrFileName().trim().isEmpty()) {
+                logger.warn("deleteAttachmentFile() - Rejected DeleteAttachmentFile request: strFileName is required");
+                return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: strFileName is required");
+            }
+
+            request.setStrFileName(cleanCdata(request.getStrFileName()));
+            if (request.getStrLogicalPath() != null) {
+                request.setStrLogicalPath(cleanCdata(request.getStrLogicalPath()));
+            }
+
+            String fileName = request.getStrFileName();
+            logger.info("deleteAttachmentFile() - Processing DeleteAttachmentFile with fileName: {}", fileName);
+
+            DeleteAttachmentFileResponse objResult = deleteAttachmentFileService.deleteAttachmentFile(request);
+            logger.info("deleteAttachmentFile() - Completed DeleteAttachmentFile for fileName: {}", fileName);
+
+            SoapDeleteAttachmentFileResponseEnvelope responseEnvelope = new SoapDeleteAttachmentFileResponseEnvelope(
+                    new SoapDeleteAttachmentFileResponseBody(objResult)
+            );
+            return xmlResponse(marshal(responseEnvelope));
+        } catch (JAXBException exception) {
+            logger.warn("deleteAttachmentFile() - Rejected invalid DeleteAttachmentFile SOAP request", exception);
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid DeleteAttachmentFile SOAP request");
+        } catch (Exception exception) {
+            logger.error("deleteAttachmentFile() - Failure while processing DeleteAttachmentFile SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
+    
 
 
 
@@ -758,7 +1174,7 @@ public class ContactSoapController {
                     .contentType(MediaType.parseMediaType("text/xml; charset=utf-8"))
                     .body(xml);
         } catch (Exception e) {
-            logger.error("Failed to marshal SendMailResponse", e);
+            logger.error("sendMailResponse() - Failed to marshal SendMailResponse", e);
             return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to marshal SendMailResponse");
         }
     }
@@ -811,6 +1227,15 @@ public class ContactSoapController {
         return val;
     }
 
+    private String cleanCdata(String val) {
+        if (val == null) return null;
+        val = val.trim();
+        while (val.startsWith("<![CDATA[") && val.endsWith("]]>")) {
+            val = val.substring(9, val.length() - 3).trim();
+        }
+        return val;
+    }
+
     private LocalDateTime parseAnsweredDateTime(String answeredDateTime) {
         if (answeredDateTime == null || answeredDateTime.trim().isEmpty()) {
             return LocalDateTime.now();
@@ -842,9 +1267,26 @@ public class ContactSoapController {
             normalized = normalized.replace("http://www.w3.org/2003/05/soap-envelope", "http://schemas.xmlsoap.org/soap/envelope/");
         }
         if (!normalized.contains("xmlns=\"http://tempuri.org/\"") && !normalized.contains("xmlns='http://tempuri.org/'")) {
-            normalized = normalized.replaceAll("<([\\w]+:)?(SendMail|SendToChecker)(?=[\\s>])(?![^>]*xmlns=)", "<$1$2 xmlns=\"http://tempuri.org/\"");
+            normalized = normalized.replaceAll("<([\\w]+:)?(SendMail|SendToChecker|GetAgentSessionKey|DeleteAgentSessionKey|UpdateAgentContact|UploadAttachment|DeleteAttachmentFile)(?=[\\s>])(?![^>]*xmlns=)", "<$1$2 xmlns=\"http://tempuri.org/\"");
         }
         return normalized;
+    }
+
+    private String extractXmlTag(String xml, String tagName) {
+        if (xml == null || tagName == null) {
+            return null;
+        }
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("<(?:" + tagName + "|[^:>]+:" + tagName + ")[^>]*>(.*?)</(?:[\\w]+:)?" + tagName + ">", java.util.regex.Pattern.DOTALL | java.util.regex.Pattern.CASE_INSENSITIVE);
+        java.util.regex.Matcher matcher = pattern.matcher(xml);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+        pattern = java.util.regex.Pattern.compile("<(?:" + tagName + "|[^:>]+:" + tagName + ")[^>]*>([^<]+)</", java.util.regex.Pattern.CASE_INSENSITIVE);
+        matcher = pattern.matcher(xml);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+        return null;
     }
 
 }

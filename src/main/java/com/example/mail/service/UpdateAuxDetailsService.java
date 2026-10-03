@@ -19,10 +19,10 @@ public class UpdateAuxDetailsService {
 
     @Transactional
     public UpdateAuxDetailsResponse updateAuxDetails(UpdateAuxDetailsRequest request) {
-        log.info("Inside UpdateAuxDetails");
+        log.info("updateAuxDetails() - Inside UpdateAuxDetails");
 
         try {
-            log.info("UpdateAuxDetails() Event Start");
+            log.info("updateAuxDetails() - Event Start");
 
             // Execute Stored Procedure USP_UpdateAuxDetails via Repository
             auxRepository.updateAuxDetails(
@@ -32,11 +32,11 @@ public class UpdateAuxDetailsService {
                 request.getEndTime()
             );
 
-            log.info("ExecuteNonQuery Successfully for AgentID: {}", request.getAgentID());
+            log.info("updateAuxDetails() - ExecuteNonQuery Successfully for AgentID: {}", request.getAgentID());
             return new UpdateAuxDetailsResponse("UpdateAuxDetails Triggered");
 
         } catch (Exception ex) {
-            log.error("UpdateAuxDetails() : AgentID : " + request.getAgentID(), ex);
+            log.error("updateAuxDetails() - AgentID : " + request.getAgentID(), ex);
             return new UpdateAuxDetailsResponse("Bad Request");
         }
     }

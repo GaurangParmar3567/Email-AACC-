@@ -81,19 +81,19 @@ public class EmailDisplayService {
     public Long assignNextPendingEmail(Long agentId) {
         UserMaster user = userMasterRepo.findByAgentId(agentId);
 
-        logger.info("Assigning next pending email for agentId: {}, skillId: {}",
+        logger.info("assignNextPendingEmail() - Assigning next pending email for agentId: {}, skillId: {}",
                 agentId, (user != null ? user.getSkillId() : "null"));
         if (user == null) {
-            logger.warn("No user found in user_master for agentId: {}", agentId);
+            logger.warn("assignNextPendingEmail() - No user found in user_master for agentId: {}", agentId);
             return null;
         }
         List<Email> emails = emailRepository.findTopPendingEmailsBySkill(user.getSkillId());
         if (emails == null || emails.isEmpty()) {
-            logger.info("No pending emails found for skillId: {}", user.getSkillId());
+            logger.info("assignNextPendingEmail() - No pending emails found for skillId: {}", user.getSkillId());
             return 0L;
         }
         Email email = emails.get(0);
-        logger.info("Assigning email with contactId: {} to agentId: {}", email.getContactId(), agentId);
+        logger.info("assignNextPendingEmail() - Assigning email with contactId: {} to agentId: {}", email.getContactId(), agentId);
         email.setAssigned(true);
         email.setAssignedTime(java.time.LocalDateTime.now());
         email.setAgentId(user.getAgentId());
@@ -264,7 +264,7 @@ public class EmailDisplayService {
                 try {
                     dto.setExtractedText(documentExtractionService.extractText(attachment.getFileData()));
                 } catch (Exception e) {
-                    logger.error("Failed to extract text from attachment", e);
+                    logger.error("mapToAttachmentDTO() - Failed to extract text from attachment", e);
                     dto.setExtractedText("[Text Extraction failed for this document]");
                 }
             }

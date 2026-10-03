@@ -23,4 +23,9 @@ public interface ContactActionRepository extends JpaRepository<ContactAction, Lo
             + "WHERE ca.closedReasonName IS NOT NULL AND ca.closedReasonNumericValue IS NOT NULL")
     List<Object[]> findDistinctClosedReasonCodes();
 
+    @Query("SELECT MAX(ca.actionId) FROM ContactAction ca WHERE ca.contactId = :contactId AND ca.agentId = :agentId")
+    Long findMaxActionIdByContactIdAndAgentId(@Param("contactId") Long contactId, @Param("agentId") Long agentId);
+
+    @Query("SELECT MAX(ca.actionId) FROM ContactAction ca WHERE ca.contactId = :contactId")
+    Long findMaxActionIdByContactId(@Param("contactId") Long contactId);
 }

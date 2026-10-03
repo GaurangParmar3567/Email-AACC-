@@ -8,22 +8,30 @@ import com.example.mail.exception.ContactNotFoundException;
 import com.example.mail.model.Attachment;
 import com.example.mail.model.ContactAction;
 import com.example.mail.model.Email;
+import com.example.mail.model.SkillMaster;
 import com.example.mail.repository.ContactActionRepository;
+import com.example.mail.repository.AttachmentRepository;
 import com.example.mail.repository.ClosedReasonRepository;
 import com.example.mail.repository.EmailRepository;
 import com.example.mail.repository.SkillMasterRepo;
 import com.example.mail.util.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.CallableStatement;
+import java.sql.Types;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class AaccContactService {
@@ -34,22 +42,29 @@ public class AaccContactService {
     private final ContactActionRepository contactActionRepository;
     private final ClosedReasonRepository closedReasonRepository;
     private final SkillMasterRepo skillMasterRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final AttachmentRepository attachmentRepository;
 
     public AaccContactService(EmailRepository emailRepository,
                               ContactActionRepository contactActionRepository,
                               ClosedReasonRepository closedReasonRepository,
-                              SkillMasterRepo skillMasterRepository) {
+                              SkillMasterRepo skillMasterRepository,
+                              JdbcTemplate jdbcTemplate,
+                              AttachmentRepository attachmentRepository) {
         this.emailRepository = emailRepository;
         this.contactActionRepository = contactActionRepository;
         this.closedReasonRepository = closedReasonRepository;
         this.skillMasterRepository = skillMasterRepository;
+        this.jdbcTemplate = jdbcTemplate;
+        this.attachmentRepository = attachmentRepository;
     }
 
+    @Transactional(readOnly = true)
     public ReadContactResult getContactDetails(Long contactId) {
-        logger.info("AaccContactService: Fetching contact details for ContactID: {}", contactId);
+        logger.info("getContactDetails() - Fetching contact details for ContactID: {}", contactId);
         List<Email> emailThread = emailRepository.findByContactId(contactId);
         if (emailThread == null || emailThread.isEmpty()) {
-            logger.warn("AaccContactService: Contact not found for ContactID: {}", contactId);
+            logger.warn("getContactDetails() - Contact not found for ContactID: {}", contactId);
             throw new ContactNotFoundException(String.valueOf(contactId));
         }
 
@@ -100,12 +115,19 @@ public class AaccContactService {
             result.setAgent(agent);
         }
 
+        // Retrieve contact-level attachments from repository (covers email attachments even if action linkage is missing)
+        List<Attachment> contactAttachments = attachmentRepository.findByEmailContactId(contactId);
+        if (contactAttachments == null) {
+            contactAttachments = Collections.emptyList();
+        }
+
         ActionListDTO actionList = new ActionListDTO();
         List<ContactAction> actions = contactActionRepository.findByContactId(contactId);
         if (actions != null && !actions.isEmpty()) {
             actions.sort(Comparator.comparing(ContactAction::getCreationTime,
                     Comparator.nullsLast(Comparator.naturalOrder())));
-            for (ContactAction action : actions) {
+            for (int i = 0; i < actions.size(); i++) {
+                ContactAction action = actions.get(i);
                 if (action == null) {
                     continue;
                 }
@@ -144,28 +166,113 @@ public class AaccContactService {
                     reason.setNumericValue(action.getClosedReasonNumericValue());
                     actionDto.setClosedReason(reason);
                 }
-                if (action.getAttachments() != null && !action.getAttachments().isEmpty()) {
-                    AttachmentListDTO attachments = new AttachmentListDTO();
-                    for (Attachment attachment : action.getAttachments()) {
-                        AWAttachmentDTO attachmentDto = new AWAttachmentDTO();
-                        attachmentDto.setId(attachment.getId());
-                        attachmentDto.setDisplayFileName(attachment.getDisplayName());
-                        attachmentDto.setInternalFileName(attachment.getInternalPath());
-                        attachments.getAwAttachments().add(attachmentDto);
+
+                // Gather attachments for this action
+                List<Attachment> candidateAttachments = new ArrayList<>();
+                try {
+                    if (action.getAttachments() != null && !action.getAttachments().isEmpty()) {
+                        candidateAttachments.addAll(action.getAttachments());
                     }
-                    actionDto.setAttachmentList(attachments);
+                } catch (Exception ex) {
+                    logger.warn("getContactDetails() - Could not lazy load attachments for action ID: {}", action.getId(), ex);
+                }
+
+                if (candidateAttachments.isEmpty() && action.getId() != null) {
+                    List<Attachment> fromActionRepo = attachmentRepository.findByContactActionId(action.getId());
+                    if (fromActionRepo != null && !fromActionRepo.isEmpty()) {
+                        candidateAttachments.addAll(fromActionRepo);
+                    }
+                }
+
+                // Fallback for the first action (i == 0) or customer incoming action:
+                // If candidate attachments is still empty, populate from contact-level attachments so the UI displays them
+                if (candidateAttachments.isEmpty() && (i == 0 || "EMail_from_Customer".equalsIgnoreCase(action.getSource()))) {
+                    candidateAttachments.addAll(contactAttachments);
+                }
+
+                if (!candidateAttachments.isEmpty()) {
+                    Map<Long, Attachment> uniqueMap = new LinkedHashMap<>();
+                    for (Attachment att : candidateAttachments) {
+                        if (att != null && att.getId() != null) {
+                            uniqueMap.put(att.getId(), att);
+                        }
+                    }
+                    if (!uniqueMap.isEmpty()) {
+                        AttachmentListDTO attachments = new AttachmentListDTO();
+                        for (Attachment attachment : uniqueMap.values()) {
+                            AWAttachmentDTO attachmentDto = new AWAttachmentDTO();
+                            attachmentDto.setId(attachment.getId());
+                            attachmentDto.setIdSpecified(true);
+                            String displayName = attachment.getDisplayName();
+                            if (displayName == null || displayName.trim().isEmpty()) {
+                                displayName = attachment.getFileName();
+                            }
+                            String internalPath = attachment.getInternalPath();
+                            if (internalPath == null || internalPath.trim().isEmpty()) {
+                                internalPath = attachment.getFileName();
+                            }
+                            attachmentDto.setDisplayFileName(displayName != null ? displayName : "");
+                            attachmentDto.setInternalFileName(internalPath != null ? internalPath : "");
+                            attachmentDto.setFileContents("");
+                            attachments.getAwAttachments().add(attachmentDto);
+                        }
+                        actionDto.setAttachmentList(attachments);
+                    }
                 }
                 actionList.getAwActions().add(actionDto);
             }
+        } else {
+            // Synthesize default AWActionDTO from rootEmail so actionList is never empty
+            AWActionDTO defaultAction = new AWActionDTO();
+            defaultAction.setId(IdGenerator.generateContactId());
+            defaultAction.setContactID(contactId);
+            defaultAction.setSubject(rootEmail.getOriginalSubject() != null ? rootEmail.getOriginalSubject() : rootEmail.getSubject());
+            defaultAction.setText(rootEmail.getText());
+            defaultAction.setTextHTML(rootEmail.getBodyHtml());
+            defaultAction.setCallbackStatus("Unspecified");
+            defaultAction.setSource("EMail_from_Customer");
+            defaultAction.setMailFrom(rootEmail.getMailFrom() != null ? rootEmail.getMailFrom() : rootEmail.getSender());
+            defaultAction.setMailTo(rootEmail.getMailTo() != null ? rootEmail.getMailTo() : rootEmail.getRecipient());
+            defaultAction.setMailCC(rootEmail.getMailCc() != null ? rootEmail.getMailCc() : rootEmail.getCc());
+            defaultAction.setTimeAllocated(20);
+            defaultAction.setOutboundTalkTime(0);
+            defaultAction.setActionType("Email");
+            if (rootEmail.getArrivalTime() != null) {
+                MillisecondsDTO creationTime = new MillisecondsDTO();
+                creationTime.setMilliseconds(rootEmail.getArrivalTime());
+                defaultAction.setCreationTime(creationTime);
+            }
+            if (!contactAttachments.isEmpty()) {
+                AttachmentListDTO attachments = new AttachmentListDTO();
+                for (Attachment attachment : contactAttachments) {
+                    AWAttachmentDTO attachmentDto = new AWAttachmentDTO();
+                    attachmentDto.setId(attachment.getId());
+                    attachmentDto.setIdSpecified(true);
+                    String displayName = attachment.getDisplayName();
+                    if (displayName == null || displayName.trim().isEmpty()) {
+                        displayName = attachment.getFileName();
+                    }
+                    String internalPath = attachment.getInternalPath();
+                    if (internalPath == null || internalPath.trim().isEmpty()) {
+                        internalPath = attachment.getFileName();
+                    }
+                    attachmentDto.setDisplayFileName(displayName != null ? displayName : "");
+                    attachmentDto.setInternalFileName(internalPath != null ? internalPath : "");
+                    attachmentDto.setFileContents("");
+                    attachments.getAwAttachments().add(attachmentDto);
+                }
+                defaultAction.setAttachmentList(attachments);
+            }
+            actionList.getAwActions().add(defaultAction);
         }
         result.setActionList(actionList);
-        logger.info("AaccContactService: Successfully retrieved contact details for ContactID: {}", contactId);
+        logger.info("getContactDetails() - Successfully retrieved contact details for ContactID: {}", contactId);
         return result;
     }
 
     @Transactional
     public long transferToSkillset(long contactId, long skillsetId) {
-        logger.info("AaccContactService: Transferring ContactID: {} to SkillsetID: {}", contactId, skillsetId);
+        logger.info("transferToSkillset() - Transferring ContactID: {} to SkillsetID: {}", contactId, skillsetId);
         List<Email> emails = requireEmails(contactId);
         String skillsetName = skillMasterRepository.findById(skillsetId)
                 .orElseThrow(() -> new IllegalArgumentException("Skillset not found for ID " + skillsetId))
@@ -177,14 +284,14 @@ public class AaccContactService {
             email.setStatus("Open");
         }
         emailRepository.saveAll(emails);
-        logger.info("AaccContactService: ContactID: {} successfully transferred to Skillset: {} ({})",
+        logger.info("transferToSkillset() - ContactID: {} successfully transferred to Skillset: {} ({})",
                 contactId, skillsetId, skillsetName);
         return contactId;
     }
 
     @Transactional
     public long closeContact(long contactId, String closureText, Long reasonCode, Boolean reasonSpecified) {
-        logger.info("AaccContactService: Closing ContactID: {}, reasonCode: {}", contactId, reasonCode);
+        logger.info("closeContact() - Closing ContactID: {}, reasonCode: {}", contactId, reasonCode);
         ContactAction action = new ContactAction();
         action.setActionId(IdGenerator.generateContactId());
         action.setContactId(contactId);
@@ -196,6 +303,7 @@ public class AaccContactService {
         action.setCreationTime(System.currentTimeMillis());
         if (Boolean.TRUE.equals(reasonSpecified) && reasonCode != null) {
             action.setClosedReasonNumericValue(reasonCode.intValue());
+            action.setClosedReasonName(closureText);
         }
         contactActionRepository.save(action);
 
@@ -204,7 +312,7 @@ public class AaccContactService {
             email.setStatus("Closed");
         }
         emailRepository.saveAll(emails);
-        logger.info("AaccContactService: ContactID: {} successfully closed with ActionID: {}", contactId, action.getActionId());
+        logger.info("closeContact() - ContactID: {} successfully closed with ActionID: {}", contactId, action.getActionId());
         return action.getActionId();
     }
 
@@ -220,6 +328,62 @@ public class AaccContactService {
             result.add(code);
         });
         return result;
+    }
+
+    public List<AWSkillset> getAllSkillsets(String skillsetName) {
+        logger.info("getAllSkillsets() - Fetching skillsets for skillsetName: {}", skillsetName);
+        List<AWSkillset> skillsets = new ArrayList<>();
+
+        // 1. Execute Stored Procedure USP_GetAllSkillsets
+        try {
+            skillsets = jdbcTemplate.query(
+                con -> {
+                    CallableStatement cs = con.prepareCall("{call USP_GetAllSkillsets(?)}");
+                    if (skillsetName != null && !skillsetName.trim().isEmpty()) {
+                        cs.setString(1, skillsetName.trim());
+                    } else {
+                        cs.setNull(1, Types.VARCHAR);
+                    }
+                    return cs;
+                },
+                (rs, rowNum) -> {
+                    AWSkillset skillset = new AWSkillset();
+                    skillset.setId(rs.getLong("id"));
+                    skillset.setName(rs.getString("name"));
+                    return skillset;
+                }
+            );
+            logger.info("getAllSkillsets() - USP_GetAllSkillsets executed successfully returning {} skillsets", skillsets.size());
+            return skillsets;
+        } catch (Exception ex) {
+            logger.warn("getAllSkillsets() - Failed to execute stored procedure USP_GetAllSkillsets (Reason: {}). Falling back to JPA repository.", ex.getMessage());
+        }
+
+        // 2. Fallback to JPA repository if procedure is not present or fails
+        try {
+            List<SkillMaster> masters;
+            if (skillsetName != null && !skillsetName.trim().isEmpty() && !"ALL".equalsIgnoreCase(skillsetName.trim())) {
+                String term = skillsetName.trim().toLowerCase();
+                masters = skillMasterRepository.findAll().stream()
+                        .filter(sm -> (sm.getName() != null && sm.getName().toLowerCase().contains(term))
+                                || (sm.getKeywords() != null && sm.getKeywords().toLowerCase().contains(term)))
+                        .collect(Collectors.toList());
+            } else {
+                masters = skillMasterRepository.findAll();
+            }
+
+            for (SkillMaster sm : masters) {
+                AWSkillset skillset = new AWSkillset();
+                skillset.setId(sm.getId());
+                skillset.setName(sm.getName());
+                skillsets.add(skillset);
+            }
+            logger.info("getAllSkillsets() - JPA fallback returned {} skillsets", skillsets.size());
+        } catch (Exception fallbackEx) {
+            logger.error("getAllSkillsets() - JPA fallback also failed", fallbackEx);
+        }
+
+        return skillsets;
     }
 
     @Transactional(readOnly = true)

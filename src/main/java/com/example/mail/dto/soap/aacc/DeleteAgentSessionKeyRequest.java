@@ -1,26 +1,24 @@
 package com.example.mail.dto.soap.aacc;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
-@XmlRootElement(name = "DeleteAgentSessionKey", namespace = "")
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlRootElement(name = "DeleteAgentSessionKey", namespace = "http://tempuri.org/")
 public class DeleteAgentSessionKeyRequest {
 
+    @XmlElement(name = "strAvayaAgentID", namespace = "http://tempuri.org/")
     private String strAvayaAgentID;
+
+    @XmlElement(name = "strSessionKey", namespace = "http://tempuri.org/")
     private String strSessionKey;
-
-    public DeleteAgentSessionKeyRequest() {}
-
-    @XmlElement(name = "strAvayaAgentID")
-    public String getStrAvayaAgentID() { return strAvayaAgentID; }
-    public void setStrAvayaAgentID(String strAvayaAgentID) { this.strAvayaAgentID = strAvayaAgentID; }
-
-    @XmlElement(name = "strSessionKey")
-    public String getStrSessionKey() { return strSessionKey; }
-    public void setStrSessionKey(String strSessionKey) { this.strSessionKey = strSessionKey; }
 }

@@ -1,35 +1,27 @@
 package com.example.mail.dto.soap.aacc;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-@XmlRootElement(name = "GetAgentSessionKeyResult", namespace = "")
+@NoArgsConstructor
+@AllArgsConstructor
+@XmlAccessorType(XmlAccessType.FIELD)
+@XmlRootElement(name = "GetAgentSessionKeyResult", namespace = "http://tempuri.org/")
 public class GetAgentSessionKeyResult {
 
-    private String AvayaAgentID;
-    private String SessionKey;
-    private String message;
-    
-    public GetAgentSessionKeyResult() {}
+    @XmlElement(name = "AvayaAgentID", namespace = "http://tempuri.org/")
+    private String avayaAgentID;
 
-    public GetAgentSessionKeyResult(String AvayaAgentID, String SessionKey,String message) {
-        this.AvayaAgentID = AvayaAgentID;
-        this.SessionKey = SessionKey;
-        this.message = message;
-    }
-    
-    @XmlElement(name = "AvayaAgentID")
-    public String getAvayaAgentID() { return AvayaAgentID; }
-    public void setAvayaAgentID(String AvayaAgentID) { this.AvayaAgentID = AvayaAgentID; }
-    
-    @XmlElement(name = "SessionKey")
-    public String getSessionKey() { return SessionKey; }
-    public void setSessionKey(String SessionKey) { this.SessionKey = SessionKey; }
-    
-    @XmlElement(name = "Message")
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
+    @XmlElement(name = "SessionKey", namespace = "http://tempuri.org/")
+    private String sessionKey;
+
+    @XmlElement(name = "Message", namespace = "http://tempuri.org/")
+    private String message;
 }

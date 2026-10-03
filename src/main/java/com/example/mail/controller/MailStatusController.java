@@ -41,7 +41,7 @@ public class MailStatusController {
     @GetMapping({"/maker-transfer", "/makerTransferStatus"})
     public ResponseEntity<List<MakerTransferStatus>> getAllMakerTransferStatus(
             @RequestParam(required = false) String contactId) {
-        logger.info("Fetching MakerTransferStatus details{}",
+        logger.info("getAllMakerTransferStatus() - Fetching MakerTransferStatus details{}",
                 (contactId != null && !contactId.trim().isEmpty()) ? " for ContactID: " + contactId.trim() : " for all records");
 
         List<MakerTransferStatus> results;
@@ -51,7 +51,7 @@ public class MailStatusController {
             results = makerTransferStatusRepository.findAll(Sort.by(Sort.Direction.DESC, "mailId"));
         }
 
-        logger.info("Completed fetching MakerTransferStatus details. Count: {}", results.size());
+        logger.info("getAllMakerTransferStatus() - Completed fetching MakerTransferStatus details. Count: {}", results.size());
         return ResponseEntity.ok(results);
     }
 
@@ -60,14 +60,14 @@ public class MailStatusController {
      */
     @GetMapping({"/maker-transfer/{mailId}", "/makerTransferStatus/{mailId}"})
     public ResponseEntity<MakerTransferStatus> getMakerTransferStatusById(@PathVariable Long mailId) {
-        logger.info("Fetching MakerTransferStatus for MailID: {}", mailId);
+        logger.info("getMakerTransferStatusById() - Fetching MakerTransferStatus for MailID: {}", mailId);
         return makerTransferStatusRepository.findById(mailId)
                 .map(status -> {
-                    logger.info("Found MakerTransferStatus for MailID: {}", mailId);
+                    logger.info("getMakerTransferStatusById() - Found MakerTransferStatus for MailID: {}", mailId);
                     return ResponseEntity.ok(status);
                 })
                 .orElseGet(() -> {
-                    logger.warn("MakerTransferStatus not found for MailID: {}", mailId);
+                    logger.warn("getMakerTransferStatusById() - MakerTransferStatus not found for MailID: {}", mailId);
                     return ResponseEntity.notFound().build();
                 });
     }
@@ -85,7 +85,7 @@ public class MailStatusController {
     @GetMapping({"/mail-send", "/mailSendStatus"})
     public ResponseEntity<List<MailSendStatus>> getAllMailSendStatus(
             @RequestParam(required = false) String contactId) {
-        logger.info("Fetching MailSendStatus details{}",
+        logger.info("getAllMailSendStatus() - Fetching MailSendStatus details{}",
                 (contactId != null && !contactId.trim().isEmpty()) ? " for ContactID: " + contactId.trim() : " for all records");
 
         List<MailSendStatus> results;
@@ -95,7 +95,7 @@ public class MailStatusController {
             results = mailSendStatusRepository.findAll(Sort.by(Sort.Direction.DESC, "mailId"));
         }
 
-        logger.info("Completed fetching MailSendStatus details. Count: {}", results.size());
+        logger.info("getAllMailSendStatus() - Completed fetching MailSendStatus details. Count: {}", results.size());
         return ResponseEntity.ok(results);
     }
 
@@ -104,14 +104,14 @@ public class MailStatusController {
      */
     @GetMapping({"/mail-send/{mailId}", "/mailSendStatus/{mailId}"})
     public ResponseEntity<MailSendStatus> getMailSendStatusById(@PathVariable Long mailId) {
-        logger.info("Fetching MailSendStatus for MailID: {}", mailId);
+        logger.info("getMailSendStatusById() - Fetching MailSendStatus for MailID: {}", mailId);
         return mailSendStatusRepository.findById(mailId)
                 .map(status -> {
-                    logger.info("Found MailSendStatus for MailID: {}", mailId);
+                    logger.info("getMailSendStatusById() - Found MailSendStatus for MailID: {}", mailId);
                     return ResponseEntity.ok(status);
                 })
                 .orElseGet(() -> {
-                    logger.warn("MailSendStatus not found for MailID: {}", mailId);
+                    logger.warn("getMailSendStatusById() - MailSendStatus not found for MailID: {}", mailId);
                     return ResponseEntity.notFound().build();
                 });
     }

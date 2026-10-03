@@ -20,15 +20,26 @@ public class SendToCheckerResult {
 
     public void setMessage(String message) {
         result.setMessage(message);
+        result.setMessageDetails(message);
+    }
+
+    public void setResultId(Integer resultId) {
+        result.setResultId(resultId);
     }
 
     @Data
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class ResultPayload {
+        @XmlElement(name = "ResultID", namespace = "http://tempuri.org/")
+        private Integer resultId = 0;
+
+        @XmlElement(name = "MessageDetails", namespace = "http://tempuri.org/")
+        private String messageDetails = "Success";
+
         @XmlElement(name = "MailId", namespace = "http://tempuri.org/")
         private Long mailId;
 
         @XmlElement(name = "Message", namespace = "http://tempuri.org/")
-        private String message;
+        private String message = "Maker transfer details saved successfully";
     }
 }
