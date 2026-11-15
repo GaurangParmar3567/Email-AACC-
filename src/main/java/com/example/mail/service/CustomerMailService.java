@@ -90,6 +90,7 @@ public class CustomerMailService {
             logger.debug("getCustomerMailforMaker() - Maker email found for ContactID {}; {} matching email(s)", contactId, emails.size());
 
             String replyText = action.getTextHtml() != null ? action.getTextHtml() : action.getText();
+            logger.debug("getCustomerMailforMaker() - Maker email reply text prepared for ContactID {}", replyText);
             CustomerMailForReplyDTO reply = new CustomerMailForReplyDTO();
             reply.setMessage("Valid ContactID");
             reply.setReplyText(replaceLegacySignature(replyText));

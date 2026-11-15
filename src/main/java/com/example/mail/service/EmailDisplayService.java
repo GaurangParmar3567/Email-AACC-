@@ -25,6 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -75,6 +76,14 @@ public class EmailDisplayService {
                 .orElseThrow(() -> new RuntimeException("Email not found"));
         email.setAssigned(true);
         emailRepository.save(email);
+    }
+
+    @Transactional
+    public int markContactReplied(Long contactId) {
+        if (contactId == null) {
+            return 0;
+        }
+        return emailRepository.markContactReplied(contactId, "Replied to Customer", LocalDateTime.now());
     }
 
     @Transactional

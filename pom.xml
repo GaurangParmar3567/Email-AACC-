@@ -21,6 +21,34 @@
 
 	<packaging>war</packaging>
 
+	<repositories>
+		<repository>
+			<id>in-project-lib</id>
+			<name>In-Project Offline Lib Repository</name>
+			<url>file://${project.basedir}/lib</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>in-project-lib-plugins</id>
+			<name>In-Project Offline Lib Plugin Repository</name>
+			<url>file://${project.basedir}/lib</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</pluginRepository>
+	</pluginRepositories>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

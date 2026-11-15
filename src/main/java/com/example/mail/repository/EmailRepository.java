@@ -5,12 +5,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 @Repository
 public interface EmailRepository extends JpaRepository<Email, Long>, JpaSpecificationExecutor<Email> {
@@ -23,16 +25,22 @@ public interface EmailRepository extends JpaRepository<Email, Long>, JpaSpecific
     Optional<Email> findByIdWithAttachments(@Param("id") Long id);
 
     List<Email> findByContactId(Long contactId);
+        @Modifying
+        @Query("UPDATE Email email SET email.status = :status, email.responded = true, "
+            + "email.respondedTime = :respondedTime WHERE email.contactId = :contactId")
+        int markContactReplied(@Param("contactId") Long contactId,
+                   @Param("status") String status,
+                   @Param("respondedTime") LocalDateTime respondedTime);
     List<Email> findByAgentId(Long agentId);
     List<Email> findByStatusIgnoreCase(String status);
     List<Email> findByContactIdGreaterThan(Long contactId);
     List<Email> findByContactIdLessThan(Long contactId);
     Email findByMessageId(String messageId);
 
-    @Query(value = "SELECT * FROM emails WHERE LOWER(CAST(mail_to AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :mailTo, '%'))", nativeQuery = true)
+    @Query(value = "SELECT * FROM emails WHERE (mail_to IS NOT NULL AND LOWER(CAST(mail_to AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :mailTo, '%'))) OR (recipient IS NOT NULL AND LOWER(CAST(recipient AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :mailTo, '%')))", nativeQuery = true)
     List<Email> findByMailToContainingIgnoreCase(@Param("mailTo") String mailTo);
 
-    @Query(value = "SELECT * FROM emails WHERE LOWER(CAST(mail_from AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :mailFrom, '%'))", nativeQuery = true)
+    @Query(value = "SELECT * FROM emails WHERE (mail_from IS NOT NULL AND LOWER(CAST(mail_from AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :mailFrom, '%'))) OR (sender IS NOT NULL AND LOWER(CAST(sender AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :mailFrom, '%')))", nativeQuery = true)
     List<Email> findByMailFromContainingIgnoreCase(@Param("mailFrom") String mailFrom);
 
     @Query(value = "SELECT * FROM emails WHERE LOWER(CAST(original_subject AS NVARCHAR(MAX))) LIKE LOWER(CONCAT('%', :subject, '%'))", nativeQuery = true)

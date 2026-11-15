@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/email")
-@CrossOrigin(origins = "https://ccdemsuat.sbi:6001")
+@CrossOrigin(origins = "*")
 public class MailController {
 
     private final MailSyncService service;

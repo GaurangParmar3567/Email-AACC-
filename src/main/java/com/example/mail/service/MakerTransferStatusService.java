@@ -21,6 +21,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+import com.example.mail.model.Attachment;
+import com.example.mail.model.ContactAction;
+import com.example.mail.model.Email;
+import com.example.mail.repository.AttachmentRepository;
+import com.example.mail.repository.EmailRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
 @Service
 public class MakerTransferStatusService {
 
@@ -28,6 +36,24 @@ public class MakerTransferStatusService {
     private final MakerTransferStatusRepository makerTransferStatusRepository;
     private final ContactActionRepository contactActionRepository;
     private final JdbcTemplate jdbcTemplate;
+
+    @Autowired(required = false)
+    private EmailRepository emailRepository;
+
+    @Autowired(required = false)
+    private AttachmentRepository attachmentRepository;
+
+    @Autowired(required = false)
+    private com.example.mail.repository.UserMasterRepo userMasterRepo;
+
+    @Value("${upload.path:C:/Uploads/}")
+    private String baseUploadPath;
+
+    @Value("${db.sp.save-maker-transfer:USP_SaveMakerTransferDetails}")
+    private String spSaveMakerTransfer;
+
+    @Value("${db.sp.save-maker-attachment:USP_SaveMakerAttachmentDetails}")
+    private String spSaveMakerAttachment;
 
     public MakerTransferStatusService(MakerTransferStatusRepository makerTransferStatusRepository,
                                       ContactActionRepository contactActionRepository,
@@ -82,33 +108,67 @@ public class MakerTransferStatusService {
 
         String agentId = requireAgentId(mail.getAgentId());
 
-        logger.debug("saveMakerTransferDetails() - Calling USP_SaveMakerTransferDetails for ContactID {}", transferStatus.getContactId());
-        Map<String, Object> output = makerTransferStatusRepository.executeSaveMakerTransferDetails(
-                transferStatus.getFromEmail(),
-                transferStatus.getToEmail(),
-                transferStatus.getSubject(),
-                transferStatus.getBodyContent(),
-                transferStatus.getContactId(),
-                agentId,
-                transferStatus.getClosedReason(),
-                transferStatus.getComment(),
-                transferStatus.getActionId(),
-                Timestamp.valueOf(transferStatus.getAnsweredDateTime()));
+        logger.debug("saveMakerTransferDetails() - Calling procedure {} for ContactID {}", spSaveMakerTransfer, transferStatus.getContactId());
+        Map<String, Object> output = null;
+        try {
+            SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
+                    .withProcedureName(spSaveMakerTransfer)
+                    .declareParameters(
+                            new SqlParameter("FromEmail", Types.VARCHAR),
+                            new SqlParameter("ToEmail", Types.VARCHAR),
+                            new SqlParameter("Subject", Types.VARCHAR),
+                            new SqlParameter("BodyContent", Types.VARCHAR),
+                            new SqlParameter("ContactID", Types.VARCHAR),
+                            new SqlParameter("AgentID", Types.VARCHAR),
+                            new SqlParameter("ClosedReason", Types.VARCHAR),
+                            new SqlParameter("Comment", Types.VARCHAR),
+                            new SqlParameter("ActionID", Types.BIGINT),
+                            new SqlOutParameter("ERRORNO", Types.INTEGER),
+                            new SqlOutParameter("ERRORMSG", Types.VARCHAR),
+                            new SqlOutParameter("MailID", Types.BIGINT),
+                            new SqlParameter("AnswerDT", Types.TIMESTAMP)
+                    );
+            MapSqlParameterSource inParams = new MapSqlParameterSource()
+                    .addValue("FromEmail", transferStatus.getFromEmail())
+                    .addValue("ToEmail", transferStatus.getToEmail())
+                    .addValue("Subject", transferStatus.getSubject())
+                    .addValue("BodyContent", transferStatus.getBodyContent())
+                    .addValue("ContactID", transferStatus.getContactId())
+                    .addValue("AgentID", agentId)
+                    .addValue("ClosedReason", transferStatus.getClosedReason())
+                    .addValue("Comment", transferStatus.getComment())
+                    .addValue("ActionID", transferStatus.getActionId())
+                    .addValue("AnswerDT", Timestamp.valueOf(transferStatus.getAnsweredDateTime()));
+            output = jdbcCall.execute(inParams);
+        } catch (Exception ex) {
+            logger.warn("saveMakerTransferDetails() - SimpleJdbcCall for {} failed (falling back to repository): {}", spSaveMakerTransfer, ex.getMessage());
+            output = makerTransferStatusRepository.executeSaveMakerTransferDetails(
+                    transferStatus.getFromEmail(),
+                    transferStatus.getToEmail(),
+                    transferStatus.getSubject(),
+                    transferStatus.getBodyContent(),
+                    transferStatus.getContactId(),
+                    agentId,
+                    transferStatus.getClosedReason(),
+                    transferStatus.getComment(),
+                    transferStatus.getActionId(),
+                    Timestamp.valueOf(transferStatus.getAnsweredDateTime()));
+        }
 
         Number errorNumber = numberValue(output, "ERRORNO");
         String errorMessage = stringValue(output, "ERRORMSG");
         if (errorNumber != null && errorNumber.intValue() != 0) {
-            logger.error("saveMakerTransferDetails() - USP_SaveMakerTransferDetails failed for ContactID {}. ERRORNO={}, ERRORMSG={}",
-                transferStatus.getContactId(), errorNumber, errorMessage);
-            throw new IllegalStateException("USP_SaveMakerTransferDetails failed ("
+            logger.error("saveMakerTransferDetails() - {} failed for ContactID {}. ERRORNO={}, ERRORMSG={}",
+                spSaveMakerTransfer, transferStatus.getContactId(), errorNumber, errorMessage);
+            throw new IllegalStateException(spSaveMakerTransfer + " failed ("
                     + errorNumber + "): " + errorMessage);
         }
 
         Number mailIdValue = numberValue(output, "MailID");
         if (mailIdValue == null || mailIdValue.longValue() <= 0) {
-            logger.error("saveMakerTransferDetails() - USP_SaveMakerTransferDetails returned no valid MailID for ContactID {}. Output keys={}",
-                transferStatus.getContactId(), output.keySet());
-            throw new IllegalStateException("USP_SaveMakerTransferDetails did not return a MailID");
+            logger.error("saveMakerTransferDetails() - {} returned no valid MailID for ContactID {}. Output keys={}",
+                spSaveMakerTransfer, transferStatus.getContactId(), output.keySet());
+            throw new IllegalStateException(spSaveMakerTransfer + " did not return a MailID");
         }
         Long mailId = mailIdValue.longValue();
         transferStatus.setMailId(mailId);
@@ -119,7 +179,89 @@ public class MakerTransferStatusService {
             saveMakerAttachmentDetails(mailId, mail.getAttachmentFiles());
         }
 
+        recordMakerTransferAction(mail, actionId);
+
         return transferStatus;
+    }
+
+    private void recordMakerTransferAction(ObjMail mail, Long actionId) {
+        if (contactActionRepository == null || mail == null) {
+            return;
+        }
+        try {
+            Long contactIdLong = mail.getContactId() != null ? Long.parseLong(mail.getContactId().trim()) : null;
+            if (contactIdLong == null) return;
+
+            ContactAction makerAction = new ContactAction();
+            makerAction.setActionId(actionId != null && actionId > 0 ? actionId : System.currentTimeMillis() % 10000000L + 1000000L);
+            makerAction.setContactId(contactIdLong);
+            makerAction.setSubject(mail.getSubject() != null ? mail.getSubject() : "Maker Transfer");
+            makerAction.setTextContent(mail.getBodyContent());
+            makerAction.setTextHtml(mail.getBodyContent());
+            makerAction.setSource("Maker_Transfer");
+            makerAction.setComment(mail.getComment());
+            makerAction.setClosedReasonName(mail.getClosedReason());
+            makerAction.setCreationTime(System.currentTimeMillis());
+            makerAction.setMailFrom(mail.getFromEmail());
+            makerAction.setMailTo(mail.getToEmail());
+            makerAction.setMailCc(mail.getCcEmail());
+            makerAction.setActionType("Email");
+            makerAction.setCallbackStatus("Unspecified");
+            makerAction.setTimeAllocated(20);
+            makerAction.setOutboundTalkTime(0);
+            if (mail.getAgentId() != null) {
+                try {
+                    Long agentIdVal = Long.parseLong(mail.getAgentId().trim());
+                    makerAction.setAgentId(agentIdVal);
+                    if (userMasterRepo != null) {
+                        com.example.mail.model.UserMaster u = userMasterRepo.findByAgentId(agentIdVal);
+                        if (u != null) {
+                            makerAction.setAgentFirstName(u.getFirstName());
+                            makerAction.setAgentLastName(u.getLastName());
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+            ContactAction savedAction = contactActionRepository.save(makerAction);
+
+            if (attachmentRepository != null && emailRepository != null && mail.getAttachmentFiles() != null && !mail.getAttachmentFiles().isEmpty()) {
+                List<Email> emails = emailRepository.findByContactId(contactIdLong);
+                Email targetEmail = (!emails.isEmpty()) ? emails.get(0) : null;
+                if (targetEmail != null) {
+                    for (String pathName : mail.getAttachmentFiles()) {
+                        if (pathName == null || pathName.trim().isEmpty()) continue;
+                        String clean = pathName.trim().replace("\\", "/");
+                        int idx = clean.lastIndexOf("/");
+                        String fileName = (idx >= 0 && idx < clean.length() - 1) ? clean.substring(idx + 1) : clean;
+
+                        Attachment att = new Attachment();
+                        att.setEmail(targetEmail);
+                        att.setContactAction(savedAction);
+                        att.setFileName(fileName);
+                        att.setDisplayName(fileName);
+                        att.setInternalPath(pathName.trim());
+
+                        try {
+                            java.io.File diskFile = new java.io.File(pathName.trim());
+                            if (!diskFile.exists() || !diskFile.isFile()) {
+                                String baseDir = baseUploadPath != null ? baseUploadPath.trim() : "C:/Uploads/";
+                                String rel = clean;
+                                while (rel.startsWith("/")) rel = rel.substring(1);
+                                diskFile = new java.io.File(baseDir + (baseDir.endsWith("/") || baseDir.endsWith("\\") ? "" : "/") + rel);
+                            }
+                            if (diskFile.exists() && diskFile.isFile()) {
+                                att.setFileData(java.nio.file.Files.readAllBytes(diskFile.toPath()));
+                            }
+                        } catch (Exception ignored) {}
+
+                        attachmentRepository.save(att);
+                    }
+                }
+            }
+            logger.info("recordMakerTransferAction() - Recorded Maker_Transfer ContactAction {} for ContactID {}", savedAction.getActionId(), contactIdLong);
+        } catch (Exception ex) {
+            logger.warn("recordMakerTransferAction() - Could not record Maker_Transfer ContactAction: {}", ex.getMessage());
+        }
     }
 
     /**
@@ -137,7 +279,7 @@ public class MakerTransferStatusService {
             }
             try {
                 SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                        .withProcedureName("USP_SaveMakerAttachmentDetails")
+                        .withProcedureName(spSaveMakerAttachment)
                         .declareParameters(
                                 new SqlParameter("MailID", Types.BIGINT),
                                 new SqlParameter("PathName", Types.VARCHAR),
@@ -151,11 +293,11 @@ public class MakerTransferStatusService {
                         .addValue("PathName", pathName.trim());
 
                 Map<String, Object> out = jdbcCall.execute(inParams);
-                logger.info("saveMakerAttachmentDetails() - Successfully executed USP_SaveMakerAttachmentDetails for MailID: {}, Path: {}, AttachmentId: {}",
-                        mailId, pathName, out.get("AttachmentId"));
+                logger.info("saveMakerAttachmentDetails() - Successfully executed {} for MailID: {}, Path: {}, AttachmentId: {}",
+                        spSaveMakerAttachment, mailId, pathName, out.get("AttachmentId"));
             } catch (Exception ex) {
-                logger.warn("saveMakerAttachmentDetails() - USP_SaveMakerAttachmentDetails call for MailID {} and Path '{}' (procedure may not be created yet): {}",
-                        mailId, pathName, ex.getMessage());
+                logger.warn("saveMakerAttachmentDetails() - {} call for MailID {} and Path '{}' (procedure may not be created yet): {}",
+                        spSaveMakerAttachment, mailId, pathName, ex.getMessage());
             }
         }
     }

@@ -9,6 +9,7 @@ import com.example.mail.repository.*;
 import lombok.var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
@@ -16,6 +17,10 @@ import org.springframework.util.StreamUtils;
 import javax.mail.*;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +39,9 @@ public class MailSyncService {
     private final SkillMasterRepo skillMasterRepository;
     private final PriorityMasterRepo priorityMasterRepository;
     private final UserMasterRepo userMasterRepo;
+
+    @Value("${upload.path:C:/Uploads/}")
+    private String baseUploadPath;
 
 //    @Value("${mail.imap.host}")
 //    private String host;
@@ -364,10 +372,29 @@ public class MailSyncService {
                             attachment.setMimeType(rawContentType);
                         }
 
-                        attachment.setFileData(StreamUtils.copyToByteArray(bodyPart.getInputStream()));
+                        byte[] fileBytes = StreamUtils.copyToByteArray(bodyPart.getInputStream());
+                        attachment.setFileData(fileBytes);
                         attachment.setEmail(email);
-                        attachment.setInternalPath(fileName);
+
+                        String inboundRelativePath = "/Inbound/" + (email.getContactId() != null ? email.getContactId() : "0") + "/" + fileName;
+                        attachment.setInternalPath(inboundRelativePath);
                         attachment.setDisplayName(fileName);
+
+                        try {
+                            String baseDir = baseUploadPath != null ? baseUploadPath.trim() : "C:/Uploads/";
+                            if (!baseDir.endsWith("/") && !baseDir.endsWith("\\")) {
+                                baseDir += File.separator;
+                            }
+                            Path targetFile = Paths.get(baseDir, "Inbound", String.valueOf(email.getContactId()), fileName);
+                            if (targetFile.getParent() != null && !Files.exists(targetFile.getParent())) {
+                                Files.createDirectories(targetFile.getParent());
+                            }
+                            Files.write(targetFile, fileBytes);
+                            logger.info("parseContent() - Successfully saved inbound attachment to disk: {}", targetFile.toAbsolutePath());
+                        } catch (Exception fileEx) {
+                            logger.warn("parseContent() - Failed to save inbound attachment to disk: {}", fileEx.getMessage());
+                        }
+
                         email.getAttachments().add(attachment);
                     } else {
                         parseContent(bodyPart, email);

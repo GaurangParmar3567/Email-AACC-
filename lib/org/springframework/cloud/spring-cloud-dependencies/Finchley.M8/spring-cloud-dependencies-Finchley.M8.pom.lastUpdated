@@ -1,0 +1,6 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Oct 09 21:52:28 IST 2026
+@default-spring-milestones-https\://repo.spring.io/libs-milestone/.lastUpdated=1791562948385
+https\://repo.maven.apache.org/maven2/.error=
+https\://repo.maven.apache.org/maven2/.lastUpdated=1791562948172
+https\://repo.spring.io/libs-milestone/.error=Could not transfer artifact org.springframework.cloud\:spring-cloud-dependencies\:pom\:Finchley.M8 from/to spring-milestones (https\://repo.spring.io/libs-milestone)\: status code\: 401, reason phrase\:  (401)

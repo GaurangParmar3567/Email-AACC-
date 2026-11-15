@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Oct 09 22:07:50 IST 2026
+spring-boot-starter-actuator-2.5.1-sources.jar>central=
+spring-boot-starter-actuator-2.5.1.jar>central=
+spring-boot-starter-actuator-2.5.1.pom>central=

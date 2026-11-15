@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "https://ccdemsuat.sbi:6001")
+@CrossOrigin(origins = "*")
 public class UserMasterController {
 
     private final UserMasterService service;

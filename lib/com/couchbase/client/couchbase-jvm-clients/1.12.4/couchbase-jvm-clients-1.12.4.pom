@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.couchbase.client</groupId>
+    <artifactId>couchbase-jvm-clients</artifactId>
+    <version>1.12.4</version>
+    <packaging>pom</packaging>
+
+    <name>Couchbase JVM Client Parent</name>
+    <description>Parent POM for Couchbase JVM projects</description>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <osgi-feature.version>3.3.4</osgi-feature.version>
+        <java-examples.version>1.3.4</java-examples.version>
+        <java-client.version>3.3.4</java-client.version>
+        <core-io.version>2.3.4</core-io.version>
+        <core-io-deps.version>1.3.4</core-io-deps.version>
+        <scala-client.version>1.3.4</scala-client.version>
+        <kotlin-client.version>1.0.4</kotlin-client.version>
+
+        <junit.version>5.9.0</junit.version>
+        <assertj.version>3.22.0</assertj.version>
+        <log4j-slf4j-impl.version>2.17.2</log4j-slf4j-impl.version>
+
+        <!-- realign back with the normal jackson version once they all align again -->
+        <jackson.version>2.13.3</jackson.version>
+
+        <reactor.version>3.4.22</reactor.version>
+        <reactive-streams.version>1.0.4</reactive-streams.version>
+        <blockhound.version>1.0.6.RELEASE</blockhound.version>
+        <log4j.version>1.2.17</log4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <karaf.version>4.3.3</karaf.version>
+        <logback.version>1.2.6</logback.version>
+        <gson.version>2.9.1</gson.version>
+
+        <scala.reactor-core-extensions.version>0.8.0</scala.reactor-core-extensions.version>
+        <scala.circe.version>0.14.1</scala.circe.version>
+        <scala.play-json.version>2.9.2</scala.play-json.version>
+        <scala.jsoniter-scala.version>2.12.0</scala.jsoniter-scala.version>
+        <scala.jsoniter.version>0.9.23</scala.jsoniter.version>
+        <scala.json4s.version>3.6.12</scala.json4s.version>
+        <scala.jawn.version>1.3.0</scala.jawn.version>
+        <scala.upickle.version>1.4.2</scala.upickle.version>
+        <scala.logback.version>1.2.7</scala.logback.version>
+        <scala.collection-compat.version>2.6.0</scala.collection-compat.version>
+
+        <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
+        <maven-source-plugin.version>3.2.1</maven-source-plugin.version>
+        <maven-javadoc-plugin.version>3.4.1</maven-javadoc-plugin.version>
+        <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
+        <flatten-maven-plugin.version>1.2.7</flatten-maven-plugin.version>
+        <scala-maven-plugin.version>4.5.4</scala-maven-plugin.version>
+        <mvn-scalafmt.version>1.0.3</mvn-scalafmt.version>
+
+        <gpg.keyname></gpg.keyname>
+        <gpg.passphrase></gpg.passphrase>
+        <!-- Required to stop the exec-maven-plugin complaining  -->
+        <exec.mainClass>none</exec.mainClass>
+    </properties>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>core-io</artifactId>
+                <version>${core-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>java-client</artifactId>
+                <version>${java-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>scala-implicits_2.11</artifactId>
+                <version>${scala-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>scala-client_2.11</artifactId>
+                <version>${scala-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>scala-implicits_2.12</artifactId>
+                <version>${scala-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>scala-client_2.12</artifactId>
+                <version>${scala-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>scala-implicits_2.13</artifactId>
+                <version>${scala-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>scala-client_2.13</artifactId>
+                <version>${scala-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>kotlin-client</artifactId>
+                <version>${kotlin-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>test-utils</artifactId>
+                <version>1.3.4</version>
+            </dependency>
+            <dependency>
+                <groupId>com.couchbase.client</groupId>
+                <artifactId>tracing-opentelemetry</artifactId>
+                <version>1.1.4</version>
+            </dependency>
+            <dependency>
+                <groupId>io.projectreactor.tools</groupId>
+                <artifactId>blockhound</artifactId>
+                <version>${blockhound.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <url>https://couchbase.com</url>
+    <organization>
+        <name>Couchbase, Inc.</name>
+        <url>https://couchbase.com</url>
+    </organization>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>daschl</id>
+            <name>Michael Nitschinger</name>
+            <email>michael.nitschinger@couchbase.com</email>
+        </developer>
+        <developer>
+            <id>programmatix</id>
+            <name>Graham Pople</name>
+            <email>graham.pople@couchbase.com</email>
+        </developer>
+        <developer>
+            <id>dnault</id>
+            <name>David Nault</name>
+            <email>david.nault@couchbase.com</email>
+        </developer>
+        <developer>
+            <id>avsej</id>
+            <name>Sergey Avseyev</name>
+            <email>sergey@couchbase.com</email>
+        </developer>
+    </developers>
+    <scm>
+        <connection>scm:git:git://github.com/couchbase/couchbase-jvm-clients</connection>
+        <developerConnection>scm:git:git://github.com/couchbase/couchbase-jvm-clients</developerConnection>
+        <url>https://github.com/couchbase/couchbase-jvm-clients</url>
+    </scm>
+
+    <modules>
+        <module>java-client</module>
+        <module>osgi-feature</module>
+        <module>java-examples</module>
+        <module>core-io</module>
+        <module>scala-implicits</module>
+        <module>scala-client</module>
+        <module>kotlin-client</module>
+        <module>test-utils</module>
+        <module>tracing-opentracing</module>
+        <module>tracing-opentelemetry</module>
+        <module>metrics-opentelemetry</module>
+        <module>metrics-micrometer</module>
+        <!-- Uncomment next lines to include the FIT performers.  They are not included by default as they require
+        a) an externally built lib and b) JDK 17 -->
+<!--         <module>core-fit-performer</module>-->
+<!--         <module>java-fit-performer</module>-->
+<!--         <module>kotlin-fit-performer</module>-->
+<!--         <module>scala-fit-performer</module>-->
+    </modules>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <configuration>
+                    <trimStackTrace>false</trimStackTrace>
+                    <includes>
+                        <include>**/*.scala</include>
+                        <include>**/*Spec.class</include>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludedGroups>flaky</excludedGroups>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>2.22.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.1.2</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>8.45.1</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <headerLocation>config/checkstyle/checkstyle-header.txt</headerLocation>
+                    <configLocation>config/checkstyle/checkstyle-basic.xml</configLocation>
+<!--                    <suppressionsLocation>config/checkstyle/checkstyle-suppressions.xml</suppressionsLocation>-->
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                    <linkXRef>false</linkXRef>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Want java-fit-performer to be executable.  Maven complains if use exec:java target as the dependencies of
+              module aren't executable.  The workaround appears to be this - disable execution by default. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.3.2</version>
+                <configuration>
+                    <skip>true</skip>
+                    <executable>java</executable>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>4.4.0</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>CI</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>${gpg.keyname}</keyname>
+                                    <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                                    <gpgArguments>
+                                        <arg>--pinentry-mode</arg>
+                                        <arg>loopback</arg>
+                                    </gpgArguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

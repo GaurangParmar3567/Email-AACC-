@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Tue Oct 20 12:29:10 IST 2026
+https\://spring-roo-repository.springsource.org/release/.error=Could not transfer artifact org.jetbrains.kotlin\:kotlin-bom\:pom\:1.5.20 from/to spring roo repository (https\://spring-roo-repository.springsource.org/release)\: spring-roo-repository.springsource.org
+https\://repo.maven.apache.org/maven2/.lastUpdated=1792479550734
+@default-spring\ roo\ repository-https\://spring-roo-repository.springsource.org/release/.lastUpdated=1792479550689

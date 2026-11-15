@@ -6,6 +6,7 @@ import com.example.mail.repository.ContactActionRepository;
 import com.example.mail.repository.MailSendStatusRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.SqlOutParameter;
 import org.springframework.jdbc.core.SqlParameter;
@@ -27,6 +28,12 @@ public class MailSendStatusService {
     private final MailSendStatusRepository mailSendStatusRepository;
     private final ContactActionRepository contactActionRepository;
     private final JdbcTemplate jdbcTemplate;
+
+    @Value("${db.sp.save-sent-mail:USP_SaveMailSendDetails}")
+    private String spSaveMailSend;
+
+    @Value("${db.sp.save-sent-attachment:USP_SaveMailAttachmentDetails}")
+    private String spSaveMailAttachment;
 
     public MailSendStatusService(MailSendStatusRepository mailSendStatusRepository,
                                  ContactActionRepository contactActionRepository,
@@ -69,11 +76,11 @@ public class MailSendStatusService {
         mailSendStatus.setActionId(actionId);
         objMail.setActionId(actionId);
 
-        // 2. Attempt USP_SaveMailSendDetails execution
+        // 2. Attempt execution via configured stored procedure
         Long mailId = null;
         try {
             SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                    .withProcedureName("USP_SaveMailSendDetails")
+                    .withProcedureName(spSaveMailSend)
                     .declareParameters(
                             new SqlParameter("FromEmail", Types.VARCHAR),
                             new SqlParameter("ToEmail", Types.VARCHAR),
@@ -120,10 +127,10 @@ public class MailSendStatusService {
                 mailId = mailIdVal.longValue();
                 mailSendStatus.setMailId(mailId);
                 objMail.setMailId(mailId);
-                logger.info("saveSentMailDetails() - USP_SaveMailSendDetails executed successfully with MailID {}", mailId);
+                logger.info("saveSentMailDetails() - {} executed successfully with MailID {}", spSaveMailSend, mailId);
             }
         } catch (Exception ex) {
-            logger.warn("saveSentMailDetails() - USP_SaveMailSendDetails not executed (procedure will be created manually): {}", ex.getMessage());
+            logger.warn("saveSentMailDetails() - {} not executed (procedure will be created manually): {}", spSaveMailSend, ex.getMessage());
         }
 
         // 3. Fallback to JPA repository if procedure is not yet created or returned no MailID
@@ -162,7 +169,7 @@ public class MailSendStatusService {
             }
             try {
                 SimpleJdbcCall jdbcCall = new SimpleJdbcCall(jdbcTemplate)
-                        .withProcedureName("USP_SaveMailAttachmentDetails")
+                        .withProcedureName(spSaveMailAttachment)
                         .declareParameters(
                                 new SqlParameter("MailID", Types.BIGINT),
                                 new SqlParameter("PathName", Types.VARCHAR),
@@ -176,11 +183,11 @@ public class MailSendStatusService {
                 .addValue("PathName", pathName.trim());
 
                 Map<String, Object> out = jdbcCall.execute(inParams);
-                logger.info("saveMailAttachmentDetails() - Successfully executed USP_SaveMailAttachmentDetails for MailID: {}, Path: {}, AttachmentId: {}",
-                        mailId, pathName, out.get("AttachmentId"));
+                logger.info("saveMailAttachmentDetails() - Successfully executed {} for MailID: {}, Path: {}, AttachmentId: {}",
+                        spSaveMailAttachment, mailId, pathName, out.get("AttachmentId"));
             } catch (Exception ex) {
-                logger.warn("saveMailAttachmentDetails() - USP_SaveMailAttachmentDetails call for MailID {} and Path '{}' (procedure will be created manually): {}",
-                        mailId, pathName, ex.getMessage());
+                logger.warn("saveMailAttachmentDetails() - {} call for MailID {} and Path '{}' (procedure will be created manually): {}",
+                        spSaveMailAttachment, mailId, pathName, ex.getMessage());
             }
         }
     }

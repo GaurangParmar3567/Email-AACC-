@@ -10,7 +10,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/skills")
-@CrossOrigin(origins = "https://ccdemsuat.sbi:6001")
+@CrossOrigin(origins = "*")
 public class SkillMasterController {
 
     private final SkillMasterService service;

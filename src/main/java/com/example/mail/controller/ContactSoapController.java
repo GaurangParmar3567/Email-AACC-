@@ -21,6 +21,7 @@ import com.example.mail.service.EmailDisplayService;
 import com.example.mail.service.GetAgentSessionKeyService;
 import com.example.mail.service.MakerTransferStatusService;
 import com.example.mail.service.UpdateAuxDetailsService;
+import com.example.mail.service.UnableToReadContactService;
 import com.example.mail.service.UpdateAgentContactService;
 import com.example.mail.service.UploadAttachmentService;
 import com.example.mail.service.DeleteAttachmentFileService;
@@ -66,9 +67,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import com.example.mail.repository.AttachmentRepository;
+import com.example.mail.service.EmailQueueAssignmentService;
+
+import javax.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping(value = "/email-service/sbi", consumes = MediaType.TEXT_XML_VALUE, produces = MediaType.TEXT_XML_VALUE)
-@CrossOrigin(origins = "https://ccdemsuat.sbi:6001")
+@CrossOrigin(origins = "*")
 public class ContactSoapController {
 
     private final Logger logger = LoggerFactory.getLogger("MAIL_SERVICES_AVAAYA_LOGGER");
@@ -88,6 +96,18 @@ public class ContactSoapController {
     private final UpdateAgentContactService updateAgentContactService;
     private final UploadAttachmentService uploadAttachmentService;
     private final DeleteAttachmentFileService deleteAttachmentFileService;
+
+    @Autowired(required = false)
+    private AttachmentRepository attachmentRepository;
+
+    @Autowired(required = false)
+    private UnableToReadContactService unableToReadContactService;
+
+    @Autowired(required = false)
+    private EmailQueueAssignmentService emailQueueAssignmentService;
+
+    @Value("${upload.path:C:/Uploads/}")
+    private String baseUploadPath;
 
     public ContactSoapController(AaccContactService aaccContactService,
                                  EmailDisplayService emailDisplayService,
@@ -124,7 +144,8 @@ public class ContactSoapController {
     }
 
     @PostMapping("/getContactAACC")
-    public ResponseEntity<String> readContact(@RequestBody String rawXmlRequestBody) {
+    public ResponseEntity<String> readContact(@RequestBody String rawXmlRequestBody,
+                                              HttpServletRequest servletRequest) {
         logger.info("readContact() - Received getContactAACC SOAP request");
         try {
             SoapRequestEnvelope request = unmarshal(rawXmlRequestBody, SoapRequestEnvelope.class);
@@ -134,13 +155,39 @@ public class ContactSoapController {
             }
             long contactId = request.getBody().getReadContact().getId();
             logger.info("readContact() - Processing getContactAACC for ContactID: {}", contactId);
+            ReadContactResult contactDetails = aaccContactService.getContactDetails(contactId);
             ReadContactResponse response = new ReadContactResponse();
-            response.setReadContactResult(aaccContactService.getContactDetails(contactId));
+            response.setReadContactResult(contactDetails);
             SoapResponseBody body = new SoapResponseBody();
             body.setReadContactResponse(response);
             SoapResponseEnvelope envelope = new SoapResponseEnvelope();
             envelope.setBody(body);
             logger.info("readContact() - getContactAACC completed successfully for ContactID: {}", contactId);
+
+            // Record landed contact in email_queue_assignment
+            try {
+                if (emailQueueAssignmentService != null) {
+                    String sessionId = request.getBody().getReadContact().getSessionKey();
+                    if (sessionId == null || sessionId.trim().isEmpty()) {
+                        if (servletRequest != null) {
+                            sessionId = (String) servletRequest.getAttribute("SESSION_ID");
+                            if (sessionId == null || sessionId.trim().isEmpty()) {
+                                sessionId = servletRequest.getHeader("Authorization");
+                                if (sessionId != null && !sessionId.trim().isEmpty()) {
+                                    sessionId = sessionId.trim();
+                                    if (sessionId.startsWith("Bearer ") || sessionId.startsWith("bearer ")) {
+                                        sessionId = sessionId.substring(7).trim();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    emailQueueAssignmentService.recordQueueAssignment(contactId, sessionId, contactDetails);
+                }
+            } catch (Exception ex) {
+                logger.error("readContact() - Error recording email_queue_assignment for ContactID: {}", contactId, ex);
+            }
+
             return xmlResponse(marshal(envelope));
         } catch (ContactNotFoundException exception) {
             logger.warn("readContact() - getContactAACC contact not found: {}", exception.getMessage());
@@ -302,11 +349,33 @@ public class ContactSoapController {
                         if (attachmentFile == null || attachmentFile.trim().isEmpty()) {
                             continue;
                         }
-                        File file = new File(attachmentFile.trim());
-                        if (file.exists() && file.isFile()) {
+                        boolean attached = false;
+                        File file = resolveAttachmentFile(attachmentFile.trim());
+                        if (file != null && file.exists() && file.isFile()) {
                             helper.addAttachment(file.getName(), file);
-                        } else {
-                            logger.warn("sendMail() - Skipping attachment {} because file does not exist", attachmentFile);
+                            attached = true;
+                            logger.info("sendMail() - Attached file from disk: {}", file.getAbsolutePath());
+                        }
+
+                        if (!attached) {
+                            Long contactIdLong = null;
+                            try {
+                                if (objMail.getContactId() != null) {
+                                    contactIdLong = Long.parseLong(objMail.getContactId().trim());
+                                }
+                            } catch (Exception ignored) {}
+
+                            byte[] dbData = resolveAttachmentFromDatabase(attachmentFile.trim(), contactIdLong);
+                            if (dbData != null && dbData.length > 0) {
+                                String fileName = extractFileName(attachmentFile.trim());
+                                helper.addAttachment(fileName, new org.springframework.core.io.ByteArrayResource(dbData));
+                                attached = true;
+                                logger.info("sendMail() - Attached file from database: {} for ContactID: {}", fileName, contactIdLong);
+                            }
+                        }
+
+                        if (!attached) {
+                            logger.warn("sendMail() - Skipping attachment {} because file does not exist on disk or in database", attachmentFile);
                         }
                     }
                 }
@@ -316,6 +385,16 @@ public class ContactSoapController {
                 mailSendStatus.setIsSent(true);
                 mailSendStatus.setRemarks("Mail sent successfully");
                 mailSendStatusService.saveSentMailDetails(mailSendStatus, objMail);
+                try {
+                    Long contactId = objMail.getContactId() == null
+                        ? null : Long.valueOf(objMail.getContactId().trim());
+                    int updatedEmails = emailDisplayService.markContactReplied(contactId);
+                    logger.info("sendMail() - Marked {} email(s) as replied for ContactID {}",
+                        updatedEmails, contactId);
+                } catch (Exception statusEx) {
+                    logger.error("sendMail() - Mail was sent, but contact reply status could not be updated for ContactID {}",
+                        objMail.getContactId(), statusEx);
+                }
                 logger.info("sendMail() - Mail sent successfully to {} and processed via MailSendStatusService (MailID: {})",
                         toEmail, mailSendStatus.getMailId());
 
@@ -364,7 +443,7 @@ public class ContactSoapController {
             TransferContactToSkillsetResponseEnvelope responseEnvelope = new TransferContactToSkillsetResponseEnvelope();
             responseEnvelope.getBody().setTransferContactToSkillsetResponse(
                     new TransferContactToSkillsetResult(
-                            aaccContactService.transferToSkillset(contactId, request.getSkillsetId())));
+                            aaccContactService.transferToSkillset(contactId, request.getSkillsetId(), request.getNote())));
             logger.info("transferContactToSkillset() - TransferContactToSkillset completed successfully for ContactID: {}, SkillsetID: {}",
                     contactId, request.getSkillsetId());
             return xmlResponse(marshal(responseEnvelope));
@@ -955,6 +1034,91 @@ public class ContactSoapController {
         }
     }
 
+    @PostMapping(value = "/UnableToReadContact")
+    public ResponseEntity<String> unableToReadContact(@RequestBody String rawXmlRequestBody) {
+        logger.info("unableToReadContact() - Received UnableToReadContact SOAP request");
+        try {
+            UnableToReadContactRequest request = null;
+
+            // 1. Demarshalling via JAXB (SOAP Envelope)
+            try {
+                SoapUnableToReadContactRequestEnvelope envelope = unmarshal(rawXmlRequestBody,
+                        SoapUnableToReadContactRequestEnvelope.class);
+                if (envelope != null && envelope.getBody() != null && envelope.getBody().getUnableToReadContact() != null) {
+                    request = envelope.getBody().getUnableToReadContact();
+                }
+            } catch (Exception ex) {
+                logger.debug("unableToReadContact() - JAXB demarshalling as SoapUnableToReadContactRequestEnvelope failed: {}", ex.getMessage());
+            }
+
+            // Fallback direct demarshalling
+            if (request == null || request.getStrAgentID() == null || request.getStrAgentID().trim().isEmpty()) {
+                try {
+                    request = unmarshal(rawXmlRequestBody, UnableToReadContactRequest.class);
+                } catch (Exception ignored) {
+                }
+            }
+
+            // Fallback tag extraction
+            if (request == null || request.getStrAgentID() == null || request.getStrAgentID().trim().isEmpty()) {
+                String agentId = extractXmlTag(rawXmlRequestBody, "strAgentID");
+                if (agentId == null) {
+                    agentId = extractXmlTag(rawXmlRequestBody, "AgentID");
+                }
+                String contactId = extractXmlTag(rawXmlRequestBody, "strContactID");
+                if (contactId == null) {
+                    contactId = extractXmlTag(rawXmlRequestBody, "ContactID");
+                }
+                String error = extractXmlTag(rawXmlRequestBody, "strError");
+                if (error == null) {
+                    error = extractXmlTag(rawXmlRequestBody, "Error");
+                }
+                if (agentId != null || contactId != null) {
+                    if (request == null) {
+                        request = new UnableToReadContactRequest();
+                    }
+                    if (agentId != null) request.setStrAgentID(cleanCdata(agentId.trim()));
+                    if (contactId != null) request.setStrContactID(cleanCdata(contactId.trim()));
+                    if (error != null) request.setStrError(cleanCdata(error.trim()));
+                }
+            }
+
+            if (request == null || request.getStrAgentID() == null || request.getStrAgentID().trim().isEmpty()) {
+                logger.warn("unableToReadContact() - Rejected UnableToReadContact request: strAgentID is required");
+                return soapFault(HttpStatus.BAD_REQUEST, "Invalid SOAP request: strAgentID is required");
+            }
+
+            request.setStrAgentID(cleanCdata(request.getStrAgentID().trim()));
+            if (request.getStrContactID() != null) {
+                request.setStrContactID(cleanCdata(request.getStrContactID().trim()));
+            }
+            if (request.getStrError() != null) {
+                request.setStrError(cleanCdata(request.getStrError().trim()));
+            }
+
+            logger.info("unableToReadContact() - Processing UnableToReadContact for agentID: {}, contactID: {}",
+                    request.getStrAgentID(), request.getStrContactID());
+
+            UnableToReadContactResponse objResult = unableToReadContactService != null
+                    ? unableToReadContactService.unableToReadContact(request)
+                    : new UnableToReadContactResponse(0, "Valid Input");
+
+            logger.info("unableToReadContact() - UnableToReadContact completed for agentID: {}, contactID: {}",
+                    request.getStrAgentID(), request.getStrContactID());
+
+            SoapUnableToReadContactResponseEnvelope responseEnvelope = new SoapUnableToReadContactResponseEnvelope(
+                    new SoapUnableToReadContactResponseBody(objResult)
+            );
+            return xmlResponse(marshal(responseEnvelope));
+        } catch (JAXBException exception) {
+            logger.warn("unableToReadContact() - Rejected invalid UnableToReadContact SOAP request", exception);
+            return soapFault(HttpStatus.BAD_REQUEST, "Invalid UnableToReadContact SOAP request");
+        } catch (Exception exception) {
+            logger.error("unableToReadContact() - Failure while processing UnableToReadContact SOAP request", exception);
+            return soapFault(HttpStatus.INTERNAL_SERVER_ERROR, "SOAP Processing Exception");
+        }
+    }
+
     @PostMapping(value = "/UploadAttachment")
     public ResponseEntity<String> uploadAttachment(@RequestBody String rawXmlRequestBody) {
         logger.info("uploadAttachment() - Received UploadAttachment SOAP request");
@@ -1267,7 +1431,7 @@ public class ContactSoapController {
             normalized = normalized.replace("http://www.w3.org/2003/05/soap-envelope", "http://schemas.xmlsoap.org/soap/envelope/");
         }
         if (!normalized.contains("xmlns=\"http://tempuri.org/\"") && !normalized.contains("xmlns='http://tempuri.org/'")) {
-            normalized = normalized.replaceAll("<([\\w]+:)?(SendMail|SendToChecker|GetAgentSessionKey|DeleteAgentSessionKey|UpdateAgentContact|UploadAttachment|DeleteAttachmentFile)(?=[\\s>])(?![^>]*xmlns=)", "<$1$2 xmlns=\"http://tempuri.org/\"");
+            normalized = normalized.replaceAll("<([\\w]+:)?(SendMail|SendToChecker|GetAgentSessionKey|DeleteAgentSessionKey|UpdateAgentContact|UnableToReadContact|UploadAttachment|DeleteAttachmentFile)(?=[\\s>])(?![^>]*xmlns=)", "<$1$2 xmlns=\"http://tempuri.org/\"");
         }
         return normalized;
     }
@@ -1287,6 +1451,65 @@ public class ContactSoapController {
             return matcher.group(1).trim();
         }
         return null;
+    }
+
+    private File resolveAttachmentFile(String attachmentPath) {
+        if (attachmentPath == null || attachmentPath.trim().isEmpty()) {
+            return null;
+        }
+        String trimmed = attachmentPath.trim();
+        File directFile = new File(trimmed);
+        if (directFile.isAbsolute() && directFile.exists() && directFile.isFile()) {
+            return directFile;
+        }
+
+        String baseDir = baseUploadPath != null ? baseUploadPath.trim() : "C:/Uploads/";
+        if (!baseDir.endsWith("/") && !baseDir.endsWith("\\")) {
+            baseDir += File.separator;
+        }
+
+        String cleanRelative = trimmed.replace("\\", "/");
+        while (cleanRelative.startsWith("/")) {
+            cleanRelative = cleanRelative.substring(1);
+        }
+
+        File resolvedFile = new File(baseDir + cleanRelative);
+        if (resolvedFile.exists() && resolvedFile.isFile()) {
+            return resolvedFile;
+        }
+
+        return null;
+    }
+
+    private byte[] resolveAttachmentFromDatabase(String attachmentPath, Long contactId) {
+        if (attachmentRepository == null) {
+            return null;
+        }
+        String fileName = extractFileName(attachmentPath);
+        try {
+            if (contactId != null) {
+                List<com.example.mail.model.Attachment> attachments = attachmentRepository.findByEmailContactId(contactId);
+                if (attachments != null) {
+                    for (com.example.mail.model.Attachment att : attachments) {
+                        if (att != null && att.getFileName() != null && att.getFileName().equalsIgnoreCase(fileName)) {
+                            if (att.getFileData() != null && att.getFileData().length > 0) {
+                                return att.getFileData();
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            logger.debug("resolveAttachmentFromDatabase() - Exception looking up attachment by contactId: {}", ex.getMessage());
+        }
+        return null;
+    }
+
+    private String extractFileName(String path) {
+        if (path == null) return "attachment";
+        String clean = path.replace("\\", "/");
+        int idx = clean.lastIndexOf("/");
+        return (idx >= 0 && idx < clean.length() - 1) ? clean.substring(idx + 1) : clean;
     }
 
 }

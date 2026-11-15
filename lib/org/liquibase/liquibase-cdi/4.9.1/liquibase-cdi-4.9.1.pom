@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.liquibase</groupId>
+  <artifactId>liquibase-cdi</artifactId>
+  <version>4.9.1</version>
+  <name>Liquibase CDI Plugin</name><description>Configures Liquibase for use in a CDI environment</description>
+  <url>http://www.liquibase.org/liquibase-cdi</url>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+  <developers>
+    <developer>
+      <id>nvoxland</id>
+      <name>Nathan Voxland</name>
+      <email>nathan.voxland@liquibase.org</email>
+      <roles>
+        <role>architect</role>
+        <role>developer</role>
+      </roles>
+      <timezone>-6</timezone>
+    </developer>
+  </developers>
+  <scm>
+    <connection>scm:git:git@github.com:liquibase/liquibase.git/liquibase-cdi</connection>
+    <developerConnection>scm:git:git@github.com:liquibase/liquibase.git/liquibase-cdi</developerConnection>
+    <url>scm:git:git@github.com:liquibase/liquibase.git/liquibase-cdi</url>
+  </scm>
+  <dependencies>
+    <dependency>
+      <groupId>org.liquibase</groupId>
+      <artifactId>liquibase-core</artifactId>
+      <version>4.9.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.enterprise</groupId>
+      <artifactId>cdi-api</artifactId>
+      <version>1.0-SP4</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.yaml</groupId>
+      <artifactId>snakeyaml</artifactId>
+      <version>1.27</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+  </dependencies>
+</project>

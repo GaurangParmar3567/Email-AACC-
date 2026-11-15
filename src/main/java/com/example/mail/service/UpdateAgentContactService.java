@@ -6,6 +6,8 @@ import com.example.mail.repository.UpdateAgentContactRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,12 @@ public class UpdateAgentContactService {
 
     @Autowired
     private UpdateAgentContactRepository updateAgentContactRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Value("${db.sp.update-agent-contact:Usp_UpdateAgentContact}")
+    private String spUpdateAgentContact;
 
     @Transactional
     public UpdateAgentContactResponse updateAgentContact(UpdateAgentContactRequest request) {
@@ -29,11 +37,16 @@ public class UpdateAgentContactService {
                     objResult.setContactResultID(-1);
 
                     try {
-                        // Execute SP: Usp_UpdateAgentContact @AgentID
-                        updateAgentContactRepository.updateAgentContactSp(request.getStrAgentID());
-
-                        objResult.setContactResultID(0);
-                        log.info("ExecuteNonQuery Successfully for AgentID: {}", request.getStrAgentID());
+                        try {
+                            jdbcTemplate.update("EXEC " + spUpdateAgentContact + " ?", request.getStrAgentID().trim());
+                            objResult.setContactResultID(0);
+                            log.info("ExecuteNonQuery Successfully for AgentID: {} using {}", request.getStrAgentID(), spUpdateAgentContact);
+                        } catch (Exception spEx) {
+                            log.warn("Direct execution of {} failed, falling back to repository: {}", spUpdateAgentContact, spEx.getMessage());
+                            updateAgentContactRepository.updateAgentContactSp(request.getStrAgentID().trim());
+                            objResult.setContactResultID(0);
+                            log.info("ExecuteNonQuery Successfully for AgentID: {} via repository fallback", request.getStrAgentID());
+                        }
 
                     } catch (Exception ex) {
                         log.error("UpdateAgentContact() : strAgentID : " + request.getStrAgentID(), ex);

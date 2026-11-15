@@ -1,0 +1,11 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Oct 09 21:52:24 IST 2026
+@default-spring-milestones-https\://repo.spring.io/libs-milestone/.lastUpdated=1791562943410
+https\://dl.bintray.com/rabbitmq/maven-milestones/.error=
+https\://dl.bintray.com/rabbitmq/maven-milestones/.lastUpdated=1791562944087
+https\://repo.maven.apache.org/maven2/.lastUpdated=1791562944164
+https\://repo.spring.io/libs-milestone/.error=Could not transfer artifact org.springframework.data\:spring-data-releasetrain\:pom\:Kay-SR5 from/to spring-milestones (https\://repo.spring.io/libs-milestone)\: status code\: 401, reason phrase\:  (401)
+https\://repo.spring.io/milestone/.error=
+https\://repo.spring.io/milestone/.lastUpdated=1791562943615
+https\://repo.spring.io/snapshot/.error=
+https\://repo.spring.io/snapshot/.lastUpdated=1791562943851

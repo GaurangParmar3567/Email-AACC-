@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Dec 05 15:44:00 IST 2025
+dockerimage-0.0.1-SNAPSHOT.jar>=
+dockerimage-0.0.1-SNAPSHOT.pom>=
+dockerimage-0.0.1-SNAPSHOT.war>=

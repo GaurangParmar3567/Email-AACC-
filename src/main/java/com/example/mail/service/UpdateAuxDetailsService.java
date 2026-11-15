@@ -6,6 +6,8 @@ import com.example.mail.repository.UpdateAuxDetailsRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,12 @@ public class UpdateAuxDetailsService {
     @Autowired
     private UpdateAuxDetailsRepository auxRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Value("${db.sp.update-aux-details:USP_UpdateAuxDetails}")
+    private String spUpdateAuxDetails;
+
     @Transactional
     public UpdateAuxDetailsResponse updateAuxDetails(UpdateAuxDetailsRequest request) {
         log.info("updateAuxDetails() - Inside UpdateAuxDetails");
@@ -24,15 +32,25 @@ public class UpdateAuxDetailsService {
         try {
             log.info("updateAuxDetails() - Event Start");
 
-            // Execute Stored Procedure USP_UpdateAuxDetails via Repository
-            auxRepository.updateAuxDetails(
-                request.getAgentID(),
-                request.getAuxCode(),
-                request.getStartTime(),
-                request.getEndTime()
-            );
+            // Execute Stored Procedure via dynamic SP name with repository fallback
+            try {
+                jdbcTemplate.update("EXEC " + spUpdateAuxDetails + " ?, ?, ?, ?",
+                        request.getAgentID(),
+                        request.getAuxCode(),
+                        request.getStartTime(),
+                        request.getEndTime());
+                log.info("updateAuxDetails() - ExecuteNonQuery Successfully for AgentID: {} using {}", request.getAgentID(), spUpdateAuxDetails);
+            } catch (Exception spEx) {
+                log.warn("updateAuxDetails() - Direct execution of {} failed, falling back to repository: {}", spUpdateAuxDetails, spEx.getMessage());
+                auxRepository.updateAuxDetails(
+                    request.getAgentID(),
+                    request.getAuxCode(),
+                    request.getStartTime(),
+                    request.getEndTime()
+                );
+                log.info("updateAuxDetails() - ExecuteNonQuery Successfully for AgentID: {} via repository fallback", request.getAgentID());
+            }
 
-            log.info("updateAuxDetails() - ExecuteNonQuery Successfully for AgentID: {}", request.getAgentID());
             return new UpdateAuxDetailsResponse("UpdateAuxDetails Triggered");
 
         } catch (Exception ex) {
